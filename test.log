@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  19 DEC 2025 21:29
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  19 DEC 2025 22:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -585,6 +585,93 @@ Package hyperref Info: Link coloring ON on input line 22.
 \openout3 = `test.out'.
 
 \c@lstlisting=\count339
+<images/clip4clip_framework.png, id=48, 667.49374pt x 203.76125pt>
+File: images/clip4clip_framework.png Graphic file (type png)
+<use images/clip4clip_framework.png>
+Package pdftex.def Info: images/clip4clip_framework.png  used on input line 53.
+
+(pdftex.def)             Requested size: 201.60077pt x 61.53925pt.
+<images/xclip_framework.png, id=50, 680.5425pt x 415.5525pt>
+File: images/xclip_framework.png Graphic file (type png)
+<use images/xclip_framework.png>
+Package pdftex.def Info: images/xclip_framework.png  used on input line 55.
+(pdftex.def)             Requested size: 201.60077pt x 123.10052pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+LaTeX Font Info:    Trying to load font information for U+msa on input line 60.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Trying to load font information for U+msb on input line 60.
+
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+Underfull \hbox (badness 1521) in paragraph at lines 62--63
+[]\OT1/ptm/m/n/10 TeachCLIP aims to bridge this gap by dis-till-ing the
+ []
+
+<images/teachclip_framework.png, id=51, 693.59125pt x 370.38374pt>
+File: images/teachclip_framework.png Graphic file (type png)
+<use images/teachclip_framework.png>
+Package pdftex.def Info: images/teachclip_framework.png  used on input line 69.
+
+(pdftex.def)             Requested size: 252.0pt x 134.57008pt.
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Underfull \hbox (badness 4805) in paragraph at lines 74--75
+[]\OT1/ptm/b/n/10 Student Model: \OT1/ptm/m/n/10 The stu-dent model is built up
+on
+ []
+
+
+
+
+
+[1{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
+ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}
+
+
+ <./images/clip4clip_framework.png> <./images/xclip_framework.png> <./images/te
+achclip_framework.png>]
+Overfull \hbox (5.31247pt too wide) in paragraph at lines 124--124
+[]|\OT1/ptm/b/n/8 Parameters| 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 124--124
+[]|\OT1/ptm/b/n/8 FLOPs
+ []
+
+
+Underfull \hbox (badness 2126) in paragraph at lines 126--127
+[]|\OT1/ptm/m/n/8 Student model, based on
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 128--128
+[]|\OT1/ptm/b/n/8 X-CLIP
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 128--129
+\OT1/ptm/m/n/8 multi-grained con-trastive
+ []
+
+
+Overfull \hbox (23.62158pt too wide) in paragraph at lines 122--131
+ [][] 
+ []
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
 
 
 No file test.bbl.
@@ -594,34 +681,38 @@ No file test.bbl.
 Package balance Warning: You have called \balance in second column
 (balance)                Columns might not be balanced.
 
-[1{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
-ocal/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc}
-
-
-] (./test.aux)
+[2] (./test.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `test.out' has not changed.
-(rerunfilecheck)             Checksum: F8D8B848E53D0C526579765748FAA7BC;1085.
+(rerunfilecheck)             Checksum: B4CCB6BE2E93BE91C5006403F408D72A;1661.
  ) 
 Here is how much of TeX's memory you used:
- 13512 strings out of 473190
- 216609 string characters out of 5715799
- 625632 words of memory out of 5000000
- 36591 multiletter control sequences out of 15000+600000
- 589282 words of font info for 85 fonts, out of 8000000 for 9000
+ 13627 strings out of 473190
+ 218875 string characters out of 5715799
+ 629788 words of memory out of 5000000
+ 36669 multiletter control sequences out of 15000+600000
+ 598019 words of font info for 109 fonts, out of 8000000 for 9000
  1145 hyphenation exceptions out of 8191
- 75i,6n,79p,758b,441s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/lo
-cal/texlive/2025/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/local/texli
-ve/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/te
-xmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on test.pdf (1 page, 55428 bytes).
+ 75i,11n,79p,758b,442s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
+></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb>
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></
+usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></us
+r/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/l
+ocal/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/lo
+cal/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/loca
+l/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/
+texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/20
+25/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/local/texlive/2025/texmf-
+dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/texmf-dist/fonts
+/type1/urw/times/utmri8a.pfb>
+Output written on test.pdf (2 pages, 688071 bytes).
 PDF statistics:
- 69 PDF objects out of 1000 (max. 8388607)
- 57 compressed objects within 1 object stream
- 10 named destinations out of 1000 (max. 500000)
- 65 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 146 PDF objects out of 1000 (max. 8388607)
+ 110 compressed objects within 2 object streams
+ 24 named destinations out of 1000 (max. 500000)
+ 104 words of extra memory for PDF output out of 10000 (max. 10000000)
 

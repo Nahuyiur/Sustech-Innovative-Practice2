@@ -3,7 +3,7 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{array}
-\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage[caption=false,font=footnotesize]{subfig}
 \usepackage{textcomp}
 \usepackage{stfloats}
 \usepackage{url}
@@ -45,6 +45,90 @@ Autonomous Driving Video Retrieval, Multimodal Large Language Models (MLLMs), Vi
 
 \subsection{DLDKD}
 \subsection{TeachCLIP}
+\subsubsection{Inspiration}
+Existing VTR models generally fall into two categories: lightweight global feature models (e.g., CLIP4Clip) and heavy fine-grained models (e.g., X-CLIP). The former is computationally efficient but often lacks frame-level details, resulting in suboptimal retrieval accuracy. The latter leverages frame-level interactions to enhance performance but incurs high computational costs.
+
+\begin{figure}[h]
+\centering
+\subfloat[CLIP4Clip Framework]{\includegraphics[width=0.8\linewidth]{images/clip4clip_framework.png}}
+\\
+\subfloat[X-CLIP Framework]{\includegraphics[width=0.8\linewidth]{images/xclip_framework.png}}
+\caption{Comparison of CLIP4Clip and X-CLIP frameworks. Both use similar bottom-up encoding but differ in upper-layer feature usage.}
+\label{fig:inspiration}
+\end{figure}
+
+In terms of vision and text encoding, both CLIP4Clip and X-CLIP share nearly identical bottom-level encoding mechanisms (Frame $\to$ Patch $\to$ ViT, Word $\to$ Embedding $\to$ Transformer). The primary distinction lies in how they utilize these features in the upper layers: CLIP4Clip performs pooling to retain only global video vectors, whereas X-CLIP preserves fine-grained features and performs multi-granularity alignment.
+
+TeachCLIP aims to bridge this gap by distilling the fine-grained alignment capability of heavy models into a lightweight student model.
+
+\subsubsection{Framework}
+The TeachCLIP framework is designed to transfer the fine-grained knowledge from a teacher model to a student model while maintaining high inference efficiency.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{images/teachclip_framework.png}
+\caption{The framework of TeachCLIP.}
+\label{fig:teachclip}
+\end{figure}
+
+\textbf{Student Model:} The student model is built upon CLIP4Clip. It samples the video into frames, processes each frame through the CLIP ViT to obtain frame features, and enhances them via a temporal Transformer. A key innovation is replacing the original mean pooling with Attentional Frame-Feature Aggregation (AFA). AFA generates frame weights $\{w_i\}$ to compute a weighted sum of frame features:
+\begin{equation}
+\phi(x) = \sum_{i=1}^m w_i \cdot \phi_i
+\end{equation}
+The AFA module consists of a lightweight structure (Linear $\to$ ReLU $\to$ Linear $\to$ Softmax) and introduces negligible parameters.
+
+\textbf{Teacher Model:} The teacher model provides two types of supervision:
+\begin{itemize}
+    \item \textbf{Video-level soft labels ($y_c$):} The teacher provides the distribution of video-text correlations to guide the student's ranking.
+    \item \textbf{Frame-level soft labels ($y_f$):} The teacher provides the distribution of frame-text correlations to guide the student's frame weight allocation in AFA.
+\end{itemize}
+
+\textbf{Learning Objectives:} The training involves three losses:
+
+1) \textit{Frame-level Distillation ($\ell_{FgT}$):} Optimizes the AFA weights to match the teacher's frame-text similarity distribution. The loss function is defined as:
+\begin{equation}
+\ell_{FgT} = -\frac{1}{b}\sum_{i=1}^{b}\sum_{k=1}^{m} y_f(f_{i,k},t_i)\,\log w_{i,k}
+\end{equation}
+where $b$ is the batch size, $m$ is the number of frames, and $y_f$ represents the frame-text similarity from the teacher.
+
+2) \textit{Video-level Distillation ($\ell_{CgT}$):} Aligns the student's video-text similarity matrix with the teacher's multi-grained similarity matrix using the Pearson distance $d_p$:
+\begin{equation}
+\begin{aligned}
+\ell_{CgT} = \frac{1}{b}\sum_i d_p(\sigma(B_{i,\cdot}),\sigma(y_c(v_i,\cdot))) \\
++ \frac{1}{b}\sum_j d_p(\sigma(B_{\cdot,j}),\sigma(y_c(\cdot,t_j)))
+\end{aligned}
+\end{equation}
+where $\sigma$ denotes the softmax function and $B$ is the similarity matrix of the student.
+
+3) \textit{Contrastive Learning ($\ell_{IN}$):} Standard maximization of similarity for positive pairs and minimization for negative pairs, using symmetric InfoNCE loss:
+\begin{equation}
+\ell_{IN} = \frac{1}{2}\Big[ \ell_{NCE}^{v \to t} + \ell_{NCE}^{t \to v} \Big]
+\end{equation}
+where
+\begin{equation}
+\ell_{NCE}^{v \to t} = -\frac{1}{b}\sum_{i=1}^{b} \log \frac{\exp(B_{ii}/\tau)}{\sum_{j=1}^{b} \exp(B_{ij}/\tau)}
+\end{equation}
+and $\ell_{NCE}^{t \to v}$ is defined symmetrically.
+
+The total loss is $\ell = \ell_{CgT} + \ell_{FgT} + \ell_{IN}$. During inference, the teacher model is discarded, and only the lightweight student model with AFA is used.
+
+\subsubsection{TeachCLIP vs X-CLIP Parameters and FLOPs Comparison}
+Table \ref{tab:teachclip_vs_xclip} presents the comparison of parameters and FLOPs between TeachCLIP and the teacher model (X-CLIP).
+
+\begin{table}[h]
+\centering
+\caption{Comparison of Parameters and FLOPs}
+\label{tab:teachclip_vs_xclip}
+\begin{tabular}{p{1.4cm} p{1.2cm} p{2.2cm} p{3.2cm}}
+\toprule
+\textbf{Model} & \textbf{Parameters} & \textbf{FLOPs (Inference)} & \textbf{Description} \\
+\midrule
+\textbf{TeachCLIP} & $\approx$ 200M & 53.65G (12 frames) & Student model, based on CLIP4Clip + AFA, maintains lightweight inference \\
+\midrule
+\textbf{X-CLIP (Teacher)} & $\approx$ 220M & 145G (8 frames) / 287G (16 frames) & Teacher model, introduces multi-grained contrastive similarity, higher inference cost \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Alterations on TeachCLIP}
 \subsection{On student model}
