@@ -45,7 +45,7 @@ Autonomous Driving Video Retrieval, Multimodal Large Language Models (MLLMs), Vi
 \subsection{Research Background and Motivation of Knowledge Distillation}
 With the rapid advancement of large-scale foundation models, Vision-Language Models (VLMs), and Large Language Models (LLMs), deploying these models on edge devices faces
 significant challenges due to high computational and memory requirements. Knowledge Distillation (KD), first proposed by Hinton et al.~\cite{hinton2015distilling}, addresses this issue by training a lightweight
-student network under the supervision of a complex teacher model. Unlike compression methods that modify network structures, KD transfers knowledge by having the student mimic the teacher’s output distribution as soft labels, enabling effective model compression while maintaining performance.
+student network under the supervision of a complex teacher model. Unlike compression methods that modify network structures, KD transfers knowledge by having the student mimic the teacher's output distribution as soft labels, enabling effective model compression while maintaining performance.
 Additionally, KD facilitates knowledge transfer from source tasks to target tasks with limited labeled data, making it particularly valuable for domain-specific applications such as autonomous driving video retrieval.
 
 \subsubsection{Mainstream Knowledge Distillation Approaches}
@@ -202,7 +202,7 @@ Table \ref{tab:teachclip_vs_xclip} presents the comparison of parameters and FLO
 \centering
 \caption{Comparison of Parameters and FLOPs}
 \label{tab:teachclip_vs_xclip}
-\begin{tabular}{p{1.4cm} p{1.1cm} p{2.1cm} p{3.4cm}}
+\begin{tabular}{p{1.3cm} p{1.0cm} p{1.8cm} p{3.0cm}}
 \toprule
 \textbf{Model} & \textbf{Parameters} & \textbf{FLOPs (Inference)} & \textbf{Description} \\
 \midrule
@@ -224,7 +224,7 @@ During distillation training, the student directly loads the pre-computed pair $
 \centering
 \caption{Training Efficiency with Precomputed Teacher Features}
 \label{tab:speed-comparison}
-\begin{tabular}{p{4.5cm} c c}
+\begin{tabular}{p{4.0cm} c c}
 \toprule
 \textbf{Setting} & \textbf{Time/step (s)} & \textbf{Speedup} \\
 \midrule
@@ -240,13 +240,13 @@ We investigated replacing the Transformer-based visual encoder (ViT) in the stud
 
 \subsubsection{Exploration under OpenCLIP Framework on COCO Dataset}
 
-We first validated fine-tuning strategies on COCO using ConvNeXtV2-Tiny. As shown in Table~\ref{tab:coco_tiny}, full fine-tuning caused overfitting, whereas a "controlled gradual unfreezing" strategy (unfreezing text at epoch 3, visual at epoch 5) achieved the best balance (I2T R@1: 9.55\%).
+We first validated fine-tuning strategies on COCO using ConvNeXtV2-Tiny. As shown in Table~\ref{tab:coco_tiny}, full fine-tuning caused overfitting, whereas a ``controlled gradual unfreezing'' strategy (unfreezing text at epoch 3, visual at epoch 5) achieved the best balance (I2T R@1: 9.55\%).
 
 \begin{table}[h]
 \centering
 \caption{Comparison of ConvNeXtV2-Tiny Strategies on COCO}
 \label{tab:coco_tiny}
-\begin{tabular}{p{3.0cm} p{1.2cm} p{3.8cm}}
+\begin{tabular}{p{2.6cm} p{1.2cm} p{3.2cm}}
 \toprule
 \textbf{Strategy} & \textbf{I2T R@1} & \textbf{Observation} \\
 \midrule
@@ -263,7 +263,7 @@ Extending this to ConvNeXt-Base with attentional pooling (`absattn`), we tested 
 \centering
 \caption{Iterative Optimization of ConvNeXt-Base on COCO}
 \label{tab:coco_base}
-\begin{tabular}{p{3.5cm} p{1.2cm} p{3.3cm}}
+\begin{tabular}{p{3.0cm} p{1.2cm} p{2.8cm}}
 \toprule
 \textbf{Strategy} & \textbf{I2T R@1} & \textbf{Note} \\
 \midrule
@@ -277,13 +277,13 @@ Distill + Late Unfreeze & 12.98\% & Unfreezing hurts distillation constraint \\
 
 \subsubsection{Preliminary Implementation on TeachCLIP with MSRVTT Dataset}
 
-We integrated the ConvNeXt-Base encoder into TeachCLIP for video retrieval on MSRVTT. However, direct migration yielded suboptimal results (Table~\ref{tab:msrvtt_res}, R@1 $\approx$ 2.6--3.4\%), even with locked encoders. This indicates that simple encoder substitution is insufficient; effective adaptation requires specialized temporal modeling (e.g., `absattn`) to capture video dynamics, marking a key direction for future optimization.
+We integrated the ConvNeXt-Base encoder into TeachCLIP for video retrieval on MSRVTT. However, direct migration yielded suboptimal results (Table~\ref{tab:msrvtt_res}, R@1 $\approx$ 2.6--3.4\%), even with locked encoders. This indicates that simple encoder substitution is insufficient; effective adaptation requires specialized temporal modeling (e.g., `absattn') to capture video dynamics, marking a key direction for future optimization.
 
 \begin{table}[h]
 \centering
 \caption{Preliminary Results of ConvNeXt-based Student on MSRVTT}
 \label{tab:msrvtt_res}
-\begin{tabular}{p{5.5cm} p{2.5cm}}
+\begin{tabular}{p{4.5cm} p{2.5cm}}
 \toprule
 \textbf{Setting} & \textbf{Text-to-Video R@1} \\
 \midrule
@@ -295,7 +295,7 @@ MSRVTT-7k (16 epochs, Locked Encoder) & 2.6\% \\
 \end{table}
 \subsection{On Teacher Model}
 
-To utilize the computationally expensive InternVideo2.5 as a teacher without the overhead of online inference, we implemented an "Offline Feature Extraction - Online Loading" scheme:
+To utilize the computationally expensive InternVideo2.5 as a teacher without the overhead of online inference, we implemented an ``Offline Feature Extraction - Online Loading'' scheme:
 
 \paragraph{1. Offline Feature Pre-computation}
 To avoid expensive repeated inference, we pre-compute and store InternVideo2.5 features (global, text, frame-level) as a local knowledge base.
@@ -314,7 +314,7 @@ We evaluated the performance of the student model distilled from different teach
 \centering
 \caption{Comparison of Different Teachers on MSRVTT}
 \label{tab:teacher_comparison}
-\begin{tabular}{p{5.5cm} c c c}
+\begin{tabular}{p{4.5cm} c c c}
 \toprule
 \textbf{Model} & \textbf{R@1} & \textbf{R@5} & \textbf{R@10} \\
 \midrule
