@@ -1,26 +1,52 @@
 \relax 
 \providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{hinton2015distilling}
+\citation{mansourian2025comprehensive}
+\citation{dong2023dual}
 \@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{section.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {II}Two knowledge distillation methods used}{1}{section.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}DLDKD}{1}{subsection.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}TeachCLIP}{1}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}1}Inspiration}{1}{subsubsection.2.2.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Comparison of CLIP4Clip and X-CLIP frameworks. Both use similar bottom-up encoding but differ in upper-layer feature usage.}}{1}{figure.1}\protected@file@percent }
-\newlabel{fig:inspiration}{{1}{1}{Comparison of CLIP4Clip and X-CLIP frameworks. Both use similar bottom-up encoding but differ in upper-layer feature usage}{figure.1}{}}
-\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {CLIP4Clip Framework}}}{1}{subfigure.1.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {X-CLIP Framework}}}{1}{subfigure.1.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The framework of TeachCLIP.}}{1}{figure.2}\protected@file@percent }
-\newlabel{fig:teachclip}{{2}{1}{The framework of TeachCLIP}{figure.2}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}2}Framework}{1}{subsubsection.2.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Research Background and Motivation of Knowledge Distillation}{1}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-A}1}Mainstream Knowledge Distillation Approaches}{1}{subsubsection.2.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}DLDKD}{1}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}1}Framework}{1}{subsubsection.2.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces The framework of DLDKD.}}{1}{figure.1}\protected@file@percent }
+\newlabel{fig:dldkd}{{1}{1}{The framework of DLDKD}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}2}Teacher-Student Architecture}{1}{subsubsection.2.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}3}Application to Video Retrieval}{2}{subsubsection.2.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}TeachCLIP}{2}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-C}1}Inspiration}{2}{subsubsection.2.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Comparison of CLIP4Clip and X-CLIP frameworks. Both use similar bottom-up encoding but differ in upper-layer feature usage.}}{2}{figure.2}\protected@file@percent }
+\newlabel{fig:inspiration}{{2}{2}{Comparison of CLIP4Clip and X-CLIP frameworks. Both use similar bottom-up encoding but differ in upper-layer feature usage}{figure.2}{}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {CLIP4Clip Framework}}}{2}{subfigure.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {X-CLIP Framework}}}{2}{subfigure.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-C}2}Framework}{2}{subsubsection.2.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The framework of TeachCLIP.}}{2}{figure.3}\protected@file@percent }
+\newlabel{fig:teachclip}{{3}{2}{The framework of TeachCLIP}{figure.3}{}}
 \bibstyle{IEEEtran}
 \bibdata{reference}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}3}TeachCLIP vs X-CLIP Parameters and FLOPs Comparison}{2}{subsubsection.2.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {III}Alterations on TeachCLIP}{2}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}On student model}{2}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}On teacher model}{2}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {IV}Conclusion}{2}{section.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Comparison of Parameters and FLOPs}}{2}{table.1}\protected@file@percent }
-\newlabel{tab:teachclip_vs_xclip}{{I}{2}{Comparison of Parameters and FLOPs}{table.1}{}}
-\gdef \@abspage@last{2}
+\bibcite{hinton2015distilling}{1}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-C}3}TeachCLIP vs X-CLIP Parameters and FLOPs Comparison}{3}{subsubsection.2.3.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Comparison of Parameters and FLOPs}}{3}{table.1}\protected@file@percent }
+\newlabel{tab:teachclip_vs_xclip}{{I}{3}{Comparison of Parameters and FLOPs}{table.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {III}Alterations on TeachCLIP}{3}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}On student model}{3}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}On teacher model}{3}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Conclusion}{3}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{3}{section*.1}\protected@file@percent }
+\gdef \@abspage@last{3}
