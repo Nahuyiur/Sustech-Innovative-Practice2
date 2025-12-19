@@ -42,8 +42,59 @@ Autonomous Driving Video Retrieval, Multimodal Large Language Models (MLLMs), Vi
 \section{Introduction}
 
 \section{Two knowledge distillation methods used}
+\subsection{Research Background and Motivation of Knowledge Distillation}
+With the rapid advancement of large-scale foundation models, Vision-Language Models (VLMs), and Large Language Models (LLMs), deploying these models on edge devices faces
+significant challenges due to high computational and memory requirements. Knowledge Distillation (KD), first proposed by Hinton et al.~\cite{hinton2015distilling}, addresses this issue by training a lightweight
+student network under the supervision of a complex teacher model. Unlike compression methods that modify network structures, KD transfers knowledge by having the student mimic the teacher’s output distribution as soft labels, enabling effective model compression while maintaining performance.
+Additionally, KD facilitates knowledge transfer from source tasks to target tasks with limited labeled data, making it particularly valuable for domain-specific applications such as autonomous driving video retrieval.
+
+\subsubsection{Mainstream Knowledge Distillation Approaches}
+Knowledge distillation methods can be categorized based on the source of knowledge being distilled~\cite{mansourian2025comprehensive}. 
+The three primary categories are: 
+\textbf{logit-based distillation}, which transfers final predictions using softmax with temperature to create soft labels; 
+\textbf{feature-based distillation}, which transfers intermediate layer representations and attention maps, providing richer information than logits alone; 
+and \textbf{similarity-based distillation}, which transfers structural knowledge through pairwise similarities between features, channels, or instances. 
+Additionally, distillation can be organized by training schemes: 
+\textbf{offline distillation} (pre-trained teacher with frozen weights), \textbf{online distillation} (simultaneous training), and \textbf{self-distillation} (same network transferring knowledge across layers or stages). 
+Other notable approaches include \textbf{attention-based distillation}for transferring focus patterns, \textbf{contrastive distillation} leveraging contrastive learning principles, and \textbf{cross-modal distillation} for transferring knowledge between different modalities, which is particularly relevant for multimodal tasks like video retrieval.
 
 \subsection{DLDKD}
+
+DLDKD (Dual Learning with Dynamic Knowledge Distillation)~\cite{dong2023dual} represents a sophisticated knowledge distillation framework specifically designed for video understanding tasks, particularly video retrieval in autonomous driving scenarios. The
+architecture employs a dual-stream teacher-student framework that effectively transfers rich multimodal knowledge from a large-scale teacher model to a lightweight student model while maintaining competitive retrieval performance.
+
+\subsubsection{Framework}
+The DLDKD framework architecture is illustrated in Figure \ref{fig:dldkd}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{images/dldkd_framework.png}
+\caption{The framework of DLDKD.}
+\label{fig:dldkd}
+\end{figure}
+
+\subsubsection{Teacher-Student Architecture}
+The DLDKD frameworkconsists of two key components: a large teacher model and a compact student model. The teacher model is typically a pretrained large-scale vision-language model (VLM) with extensive parameters, capable of capturing complex spatiotemporal relationships in video sequences. 
+This teacher model serves as the knowledge source, providing rich feature representations and semantic understanding of video content. 
+The teacher architecture typically incorporates multiple transformer layers with cross-modal attention mechanisms, enabling it to effectively align visual features with textual descriptions.
+
+In contrast, the student model is designed with a significantly reduced parameter count and computational complexity, making it suitable for deployment on resource-constrained edge devices commonly used in autonomous driving systems.
+The student architecture maintains a similar structural design to the teacher but with fewer layers, reduced hidden dimensions, and optimized attention mechanisms. Despite its compact nature, the student model is trained to mimic the teacher’s behavior through carefully designed distillation objectives.
+
+The distillation process in DLDKD operates at multiple levels: feature-level distillation transfers intermediate representations from the teacher's encoder layers to corresponding 2 layers in the student, logit-level distillation aligns the final
+output distributions, and attention-level distillation preserves the teacher's focus patterns. This multi-level knowledge transfer ensures that the student model captures both low-level
+visual features and high-level semantic understanding from the teacher, enabling effective knowledge compression without significant performance degradation.
+
+\subsubsection{Application to Video Retrieval}
+In the context of video retrieval for autonomous driving scenarios, DLDKD addresses the critical challenge of efficiently matching textual queries with relevant video segments. The teacher model, pretrained on large-scale video-text datasets, possesses strong capabilities in understanding complex driving scenarios, including object
+detection, motion analysis, and scene understanding. During the distillation process, the student model learns to replicate these capabilities in a more efficient manner.
+
+For video retrieval tasks, the DLDKD framework processes input videos through the student model's encoder to extract compact yet discriminative feature representations. These features are then compared with query embeddings in a shared semantic space, enabling efficient similarity computation. 
+The distillation process ensures that the student model maintains the teacher's ability to understand fine-grained visual details crucial for autonomous driving scenarios, such as vehicle types, traffic conditions, weather patterns, and road infrastructure.
+
+The application of DLDKD to video retrieval offers several advantages: first, the lightweight student model enables real-time retrieval on edge devices, which is essential for autonomous driving applications requiring low-latency responses. Second, the knowledge transferred from the teacher model helps the student generalize better to diverse driving scenarios, even when trained on limited domain-specific data. 
+Third, the multi-level distillation approach preserves the teacher's ability to handle complex queries involving multiple objects, temporal relationships, and spatial configurations, which are common in autonomous driving video retrieval tasks.
+
 \subsection{TeachCLIP}
 \subsubsection{Inspiration}
 Existing VTR models generally fall into two categories: lightweight global feature models (e.g., CLIP4Clip) and heavy fine-grained models (e.g., X-CLIP). The former is computationally efficient but often lacks frame-level details, resulting in suboptimal retrieval accuracy. The latter leverages frame-level interactions to enhance performance but incurs high computational costs.
