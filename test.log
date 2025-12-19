@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  19 DEC 2025 21:21
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.20)  19 DEC 2025 21:28
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -604,23 +604,24 @@ LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `test.out' has not changed.
-(rerunfilecheck)             Checksum: 9FBA2432BF8A4F5808E3A3996573F529;196.
+(rerunfilecheck)             Checksum: F8D8B848E53D0C526579765748FAA7BC;1085.
  ) 
 Here is how much of TeX's memory you used:
- 13499 strings out of 473190
- 216442 string characters out of 5715799
- 623625 words of memory out of 5000000
- 36585 multiletter control sequences out of 15000+600000
- 588146 words of font info for 84 fonts, out of 8000000 for 9000
+ 13512 strings out of 473190
+ 216609 string characters out of 5715799
+ 625632 words of memory out of 5000000
+ 36591 multiletter control sequences out of 15000+600000
+ 589282 words of font info for 85 fonts, out of 8000000 for 9000
  1145 hyphenation exceptions out of 8191
  75i,6n,79p,758b,441s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2025/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/lo
 cal/texlive/2025/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/local/texli
-ve/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb>
-Output written on test.pdf (1 page, 43626 bytes).
+ve/2025/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2025/te
+xmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on test.pdf (1 page, 55428 bytes).
 PDF statistics:
- 38 PDF objects out of 1000 (max. 8388607)
- 28 compressed objects within 1 object stream
- 4 named destinations out of 1000 (max. 500000)
- 17 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 69 PDF objects out of 1000 (max. 8388607)
+ 57 compressed objects within 1 object stream
+ 10 named destinations out of 1000 (max. 500000)
+ 65 words of extra memory for PDF output out of 10000 (max. 10000000)
 
