@@ -1,0 +1,397 @@
+\documentclass{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\title[Lightweight Video Retrieval]{Knowledge Distillation Based on Large Video Retrieval Models}
+\author{Rui Yuhan \and Qiao Shihan}
+\institute{12310520 \and 12310437}
+\date{\today}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{multirow}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+    \tableofcontents
+\end{frame}
+
+\section{Introduction}
+
+\begin{frame}[allowframebreaks]{Abstract}
+    In the domain of autonomous driving (AD), deploying effective video retrieval systems faces a critical bottleneck: the high computational demand of large multimodal models versus the strict resource constraints of edge devices. This report focuses on \textbf{lightweighting} strategies to resolve this conflict. We explore two complementary pathways to achieve efficient video retrieval: Knowledge Distillation (KD) and Post-Training Quantization (PTQ). 
+    
+    First, leveraging the TeachCLIP framework, we distill complex knowledge from heavy teacher models into lightweight student networks. We propose an acceleration strategy via ``Offline Feature Extraction" (improving training throughput by 9.7\%) and investigate architectural lightweighting by replacing the visual encoder with ConvNeXt. 
+    
+    Second, we apply GPTQ-based post-training quantization to the massive VAST foundation model. By compressing the model to INT4 precision, we achieve a 2.80$\times$ reduction in global model size and a significant 4.33$\times$ compression of the vision encoder. These efforts collectively demonstrate viable paths toward constructing lightweight, high-performance video retrieval systems suitable for on-vehicle deployment.
+\end{frame}
+
+\begin{frame}[allowframebreaks]{Introduction}
+    Efficient video retrieval is critical for autonomous driving safety validation and data mining, yet deploying powerful Multimodal Large Language Models (MLLMs) on resource-constrained vehicles remains a significant bottleneck. To address this, we focus on \textbf{model lightweighting} strategies that bridge the gap between high-level semantic understanding and on-board hardware limitations.
+
+    This report explores two optimization paradigms. First, we leverage Knowledge Distillation (KD) via the TeachCLIP framework, transferring fine-grained knowledge from heavy teachers to lightweight students. We enhance this pipeline with an "Offline Feature Extraction" strategy for faster training and investigate architectural optimizations using ConvNeXt encoders. 
+    
+    Second, we employ Post-Training Quantization (PTQ) on the VAST foundation model. By quantizing weights to INT4 precision using MS-Swift, we drastically reduce memory footprint while retaining retrieval capabilities.
+
+    The subsequent sections detail our methods: Section II reviews KD; Section III presents our TeachCLIP optimizations; Section IV discusses VAST quantization; and Section V concludes with performance insights.
+\end{frame}
+
+\section{Two Knowledge Distillation Methods Used}
+
+\begin{frame}[allowframebreaks]{Research Background and Motivation of Knowledge Distillation}
+    With the rapid advancement of large-scale foundation models, Vision-Language Models (VLMs), and Large Language Models (LLMs), deploying these models on edge devices faces significant challenges due to high computational and memory requirements. Knowledge Distillation (KD), first proposed by Hinton et al., addresses this issue by training a lightweight student network under the supervision of a complex teacher model. Unlike compression methods that modify network structures, KD transfers knowledge by having the student mimic the teacher's output distribution as soft labels, enabling effective model compression while maintaining performance.
+    
+    Additionally, KD facilitates knowledge transfer from source tasks to target tasks with limited labeled data, making it particularly valuable for domain-specific applications such as autonomous driving video retrieval.
+
+    \framebreak
+    \textbf{Mainstream Knowledge Distillation Approaches}
+    
+    Knowledge distillation methods can be categorized based on the source of knowledge being distilled. The three primary categories are:
+    \begin{itemize}
+        \item \textbf{logit-based distillation}, which transfers final predictions using softmax with temperature to create soft labels;
+        \item \textbf{feature-based distillation}, which transfers intermediate layer representations and attention maps, providing richer information than logits alone;
+        \item \textbf{similarity-based distillation}, which transfers structural knowledge through pairwise similarities between features, channels, or instances.
+    \end{itemize}
+    
+    Additionally, distillation can be organized by training schemes: \textbf{offline distillation} (pre-trained teacher with frozen weights), \textbf{online distillation} (simultaneous training), and \textbf{self-distillation}. Other notable approaches include \textbf{attention-based distillation}, \textbf{contrastive distillation}, and \textbf{cross-modal distillation}.
+\end{frame}
+
+\begin{frame}[allowframebreaks]{DLDKD}
+    DLDKD (Dual Learning with Dynamic Knowledge Distillation) employs a dual-stream teacher-student framework that transfers knowledge from a large teacher model to a lightweight student model through multi-level distillation.
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/dldkd_framework.png}
+        \caption{The framework of DLDKD.}
+        \label{fig:dldkd}
+    \end{figure}
+
+    DLDKD performs distillation at multiple levels: feature-level distillation transfers intermediate representations, logit-level distillation aligns output distributions, and attention-level distillation preserves attention patterns.
+
+    \framebreak
+    \textbf{Loss Functions}
+    
+    The DLDKD framework employs a dual learning objective that combines knowledge from the teacher model with task-specific learning through two student branches. The total loss function is defined as:
+    \begin{equation}
+    \mathcal{L}_{total} = \lambda_I \mathcal{L}_I + \lambda_E \mathcal{L}_E + \mathcal{L}_{task}
+    \end{equation}
+    where $\lambda_I$ and $\lambda_E$ are dynamic weights that adjust the contribution of the inheritance branch and exploration branch losses, respectively.
+
+    \textbf{Inheritance Student Branch Loss ($\mathcal{L}_I$):}
+    The inheritance branch learns to absorb knowledge from the teacher model through multi-level distillation. The loss combines feature-level, logit-level, and attention-level distillation:
+    \begin{equation}
+    \mathcal{L}_I = \alpha_f \mathcal{L}_{feat} + \alpha_l \mathcal{L}_{logit} + \alpha_a \mathcal{L}_{attn}
+    \end{equation}
+    where $\alpha_f$, $\alpha_l$, and $\alpha_a$ are weights for feature-level, logit-level, and attention-level distillation losses, respectively.
+
+    \framebreak
+    The feature-level distillation loss aligns intermediate representations between teacher and student:
+    \begin{equation}
+    \mathcal{L}_{feat} = \frac{1}{N}\sum_{i=1}^{N} \|F_t^{(i)} - F_s^{(i)}\|_2^2
+    \end{equation}
+    
+    The logit-level distillation loss uses KL divergence to align output distributions:
+    \begin{equation}
+    \mathcal{L}_{logit} = \text{KL}(\text{softmax}(z_t/\tau) \| \text{softmax}(z_s/\tau))
+    \end{equation}
+    
+    The attention-level distillation loss preserves the teacher's attention patterns:
+    \begin{equation}
+    \mathcal{L}_{attn} = \frac{1}{L}\sum_{l=1}^{L} \|A_t^{(l)} - A_s^{(l)}\|_F^2
+    \end{equation}
+
+    \textbf{Exploration Student Branch Loss ($\mathcal{L}_E$):}
+    The exploration branch focuses on task-specific learning to capture domain-specific patterns that may not be fully represented in the teacher model.
+
+    \textbf{Task-Specific Loss ($\mathcal{L}_{task}$):}
+    The task loss ensures that the final model performs well on the video-text retrieval task.
+    
+    \textbf{Dynamic Weight Adjustment:}
+    The weights $\lambda_I$ and $\lambda_E$ are dynamically adjusted during training based on the performance of each branch.
+    \begin{equation}
+    \lambda_I^{(t)} = \lambda_I^{(0)} \cdot \exp(-\gamma_I \cdot t), \quad \lambda_E^{(t)} = \lambda_E^{(0)} \cdot (1 + \gamma_E \cdot t)
+    \end{equation}
+\end{frame}
+
+\begin{frame}{Feature Pre-Extraction Strategy in DLDKD}
+    DLDKD employs feature pre-extraction to accelerate training: teacher model features are pre-computed and cached for all training samples before distillation training, eliminating repeated forward passes through the teacher model during training. In the subsequent modifications to TeachCLIP, we will incorporate this feature pre-extraction strategy to shorten the training time.
+\end{frame}
+
+\section{TeachCLIP}
+
+\begin{frame}[allowframebreaks]{TeachCLIP Inspiration}
+    Existing VTR models generally fall into two categories: lightweight global feature models (e.g., CLIP4Clip) and heavy fine-grained models (e.g., X-CLIP). The former is computationally efficient but often lacks frame-level details, resulting in suboptimal retrieval accuracy. The latter leverages frame-level interactions to enhance performance but incurs high computational costs.
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\linewidth]{images/clip4clip_framework.png} \\
+        \includegraphics[width=0.6\linewidth]{images/xclip_framework.png}
+        \caption{Comparison of CLIP4Clip and X-CLIP frameworks.}
+    \end{figure}
+
+    In terms of vision and text encoding, both CLIP4Clip and X-CLIP share nearly identical bottom-level encoding mechanisms (Frame $\to$ Patch $\to$ ViT, Word $\to$ Embedding $\to$ Transformer). The primary distinction lies in how they utilize these features in the upper layers. TeachCLIP aims to bridge this gap by distilling the fine-grained alignment capability of heavy models into a lightweight student model.
+\end{frame}
+
+\begin{frame}[allowframebreaks]{TeachCLIP Framework}
+    The TeachCLIP framework is designed to transfer the fine-grained knowledge from a teacher model to a student model while maintaining high inference efficiency.
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/teachclip_framework.png}
+        \caption{The framework of TeachCLIP.}
+        \label{fig:teachclip}
+    \end{figure}
+
+    \textbf{Student Model:} The student model is built upon CLIP4Clip. It samples the video into frames, processes each frame through the CLIP ViT to obtain frame features, and enhances them via a temporal Transformer. A key innovation is replacing the original mean pooling with Attentional Frame-Feature Aggregation (AFA). AFA generates frame weights $\{w_i\}$ to compute a weighted sum of frame features:
+    \begin{equation}
+    \phi(x) = \sum_{i=1}^m w_i \cdot \phi_i
+    \end{equation}
+    The AFA module consists of a lightweight structure (Linear $\to$ ReLU $\to$ Linear $\to$ Softmax) and introduces negligible parameters.
+
+    \framebreak
+    \textbf{Teacher Model:} The teacher model provides two types of supervision:
+    \begin{itemize}
+        \item \textbf{Video-level soft labels ($y_c$):} The teacher provides the distribution of video-text correlations to guide the student's ranking.
+        \item \textbf{Frame-level soft labels ($y_f$):} The teacher provides the distribution of frame-text correlations to guide the student's frame weight allocation in AFA.
+    \end{itemize}
+
+    \textbf{Learning Objectives:} The training involves three losses:
+    \begin{enumerate}
+        \item \textit{Frame-level Distillation ($\ell_{FgT}$):} Optimizes the AFA weights to match the teacher's frame-text similarity distribution.
+        \item \textit{Video-level Distillation ($\ell_{CgT}$):} Aligns the student's video-text similarity matrix with the teacher's multi-grained similarity matrix using the Pearson distance.
+        \item \textit{Contrastive Learning ($\ell_{IN}$):} Standard maximization of similarity for positive pairs and minimization for negative pairs, using symmetric InfoNCE loss.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{TeachCLIP vs X-CLIP Parameters and FLOPs Comparison}
+    Table \ref{tab:teachclip_vs_xclip} presents the comparison of parameters and FLOPs between TeachCLIP and the teacher model (X-CLIP).
+
+    \begin{table}
+        \centering
+        \caption{Comparison of Parameters and FLOPs}
+        \label{tab:teachclip_vs_xclip}
+        \begin{tabular}{p{2cm} p{2cm} p{3cm} p{3cm}}
+        \toprule
+        \textbf{Model} & \textbf{Parameters} & \textbf{FLOPs (Inference)} & \textbf{Description} \\
+        \midrule
+        \textbf{TeachCLIP} & $\approx$ 200M & 53.65G (12 frames) & Student model, based on CLIP4Clip + AFA, maintains lightweight inference \\
+        \midrule
+        \textbf{X-CLIP (Teacher)} & $\approx$ 220M & 145G (8 frames) / 287G (16 frames) & Teacher model, introduces multi-grained contrastive similarity, higher inference cost \\
+        \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\section{Alterations on TeachCLIP}
+
+\begin{frame}[allowframebreaks]{Feature Pre-computation Acceleration}
+    We precompute and cache frame-level visual features offline to eliminate the expensive video encoding overhead from the training loop. Specifically, each video is sampled into a fixed number of frames ($F$), and every frame is processed by the \textbf{teacher model (X-CLIP)}'s visual encoder to obtain high-level semantic embeddings (e.g., 512-D per frame for ViT-B/32). The resulting feature tensor $\mathbf{V}\in\mathbb{R}^{F\times d}$ is saved alongside a binary frame mask $\mathbf{m}\in\{0,1\}^{F}$ to handle varying video lengths.
+
+    During distillation training, the student directly loads the pre-computed pair $(\mathbf{V}, \mathbf{m})$, bypassing the need to re-encode raw pixels. This strategy significantly enhances throughput and reproducibility. As shown in Table~\ref{tab:speed-comparison}, this optimization yields a measurable speedup in training time per step.
+
+    \begin{table}
+        \centering
+        \caption{Training Efficiency with Precomputed Teacher Features}
+        \label{tab:speed-comparison}
+        \begin{tabular}{p{4.0cm} c c}
+        \toprule
+        \textbf{Setting} & \textbf{Time/step (s)} & \textbf{Speedup} \\
+        \midrule
+        Online Extraction (Baseline) & 1.91 & -- \\
+        Offline Pre-computation & \textbf{1.74} & \textbf{+9.7\%} \\
+        \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{On Student Model}
+    We investigated replacing the Transformer-based visual encoder (ViT) in the student model with ConvNeXt, leveraging the open-source implementation and pre-trained weights from OpenCLIP, which provides reproducible training of CLIP models across diverse architectures. The objective was to explore whether CNN inductive biases, such as translation invariance and locality, could offer advantages in visual feature extraction or efficiency compared to the standard ViT. However, as detailed below, realizing these potential benefits in the video domain proved non-trivial.
+
+    \textbf{Exploration under OpenCLIP Framework on COCO Dataset}
+    We first validated fine-tuning strategies on COCO using ConvNeXtV2-Tiny. As shown in Table~\ref{tab:coco_tiny}, full fine-tuning caused overfitting, whereas a ``controlled gradual unfreezing'' strategy (unfreezing text at epoch 3, visual at epoch 5) achieved the best balance (I2T R@1: 9.55\%).
+
+    \framebreak
+    \begin{table}
+        \centering
+        \caption{Comparison of ConvNeXtV2-Tiny Strategies on COCO}
+        \label{tab:coco_tiny}
+        \small
+        \begin{tabular}{p{2.6cm} p{1.2cm} p{3.2cm}}
+        \toprule
+        \textbf{Strategy} & \textbf{I2T R@1} & \textbf{Observation} \\
+        \midrule
+        No Freeze & 8.12\% & Overfitting, worst performance \\
+        \textbf{Unfreeze 3-5} & \textbf{9.55\%} & \textbf{Best balance} \\
+        Change Text & 9.07\% & Intermediate performance \\
+        \bottomrule
+        \end{tabular}
+    \end{table}
+
+    Extending this to ConvNeXt-Base with attentional pooling (`absattn`), we tested four strategies. While distillation with a frozen student provided strong regularization, the optimal performance (R@1: 13.11\%) was achieved by removing distillation in favor of a Head-level Alignment loss (`headalign`) combined with early, small-scale unfreezing.
+
+    \framebreak
+    \textbf{Preliminary Implementation on TeachCLIP with MSRVTT Dataset}
+    
+    We integrated the ConvNeXt-Base encoder into TeachCLIP for video retrieval on MSRVTT. However, direct migration yielded suboptimal results (Table~\ref{tab:msrvtt_res}, R@1 $\approx$ 2.6--3.4\%), even with locked encoders. This indicates that simple encoder substitution is insufficient; effective adaptation requires specialized temporal modeling (e.g., `absattn') to capture video dynamics, marking a key direction for future optimization.
+
+    \begin{table}
+        \centering
+        \caption{Preliminary Results of ConvNeXt-based Student on MSRVTT}
+        \label{tab:msrvtt_res}
+        \begin{tabular}{p{4.5cm} p{2.5cm}}
+        \toprule
+        \textbf{Setting} & \textbf{Text-to-Video R@1} \\
+        \midrule
+        MSRVTT-9k (10 epochs) & 3.4\% \\
+        MSRVTT-7k (10 epochs) & 2.5\% \\
+        MSRVTT-7k (16 epochs, Locked) & 2.6\% \\
+        \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{On Teacher Model}
+    To utilize the computationally expensive InternVideo2.5 as a teacher without the overhead of online inference, we implemented an ``Offline Feature Extraction - Online Loading'' scheme:
+    \begin{itemize}
+        \item \textbf{1. Offline Feature Pre-computation:} To avoid expensive repeated inference, we pre-compute and store InternVideo2.5 features (global, text, frame-level) as a local knowledge base.
+        \item \textbf{2. Data Pipeline Index Alignment:} We implemented unique Sample IDs to strictly align shuffled student inputs with the corresponding offline teacher features.
+        \item \textbf{3. Training Logic Adaptation:} The training loop was refactored to skip teacher inference, instead utilizing an 'Offline Feature Loader' to feed pre-computed similarity matrices and weights directly into the distillation loss.
+    \end{itemize}
+
+    \framebreak
+    \textbf{Results on MSRVTT}
+    
+    We evaluated the performance of the student model distilled from different teachers on the MSRVTT dataset. As shown in Table~\ref{tab:teacher_comparison}, although InternVideo2.5 demonstrates superior performance as a teacher, the student model distilled from it (TeachCLIP w/ InternVideo2.5) currently underperforms the baseline distilled from X-CLIP. This performance drop is likely due to suboptimal hyperparameter settings (e.g., temperature, loss weights) when aligning with the new teacher's distribution, indicating that further tuning and optimization are required in future work.
+
+    \begin{table}
+        \centering
+        \caption{Comparison of Different Teachers on MSRVTT}
+        \label{tab:teacher_comparison}
+        \begin{tabular}{p{4.5cm} c c c}
+        \toprule
+        \textbf{Model} & \textbf{R@1} & \textbf{R@5} & \textbf{R@10} \\
+        \midrule
+        X-CLIP & 49.3 & 75.8 & 84.8 \\
+        TeachCLIP (Teacher: X-CLIP) & 46.8 & 74.9 & 82.9 \\
+        InternVideo2.5 (Teacher) & 55.9 & 78.3 & 85.1 \\
+        TeachCLIP (Teacher: InternVideo2.5) & 42.8 & 70.2 & 80.6 \\
+        \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\section{Post-Training Quantization of VAST Model using MS-Swift}
+
+\begin{frame}[allowframebreaks]{Post-Training Quantization of VAST}
+    In this section, we apply post-training quantization methods introduced in MS-Swift to compress the VAST model for video-text retrieval tasks. Post-training quantization is a model compression technique that reduces the precision of model weights and activations after the model has been fully trained, enabling efficient deployment on resource-constrained devices without requiring retraining from scratch.
+
+    \textbf{MS-Swift Quantization Architecture and Methodology}
+    
+    MS-Swift (ModelScope Swift) implements a GPTQ-based quantization framework for post-training quantization. The framework employs GPTQ with INT4 precision, using block-wise sequential quantization with Hessian-based optimization to minimize reconstruction error. Key configuration parameters include: group size of 128 for grouped quantization, symmetric quantization (sym=true), and sequential quantization (true\_sequential=true) to preserve inter-layer dependencies. The framework supports module-level selective quantization, enabling quantization to be applied only to specific components (e.g., vision encoder blocks) while preserving full precision for other modules such as text encoders or modality-specific branches in multimodal models.
+\end{frame}
+
+\begin{frame}[allowframebreaks]{VAST Architecture for Video-Text Retrieval}
+    VAST (Vision-Audio-Subtitle-Text) is an omni-modality foundation model. The VAST framework architecture is illustrated in Figure \ref{fig:vast}.
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/vast_framework.png}
+        \caption{The framework of VAST.}
+        \label{fig:vast}
+    \end{figure}
+
+    For video-text retrieval, VAST employs dual encoders: a video encoder that processes frames through a ViT architecture with temporal modeling, and a text encoder based on transformer architecture. The model learns cross-modal alignment in a shared embedding space, using contrastive learning to maximize similarity between matching video-text pairs.
+    
+    The VAST model achieves strong performance in video-text retrieval after fine-tuning on domain-specific data. Given the model's size, there is room for further lightweight optimization to better adapt to real-time applications. We therefore apply post-training quantization to obtain smaller model weights while maintaining competitive performance.
+\end{frame}
+
+\begin{frame}[allowframebreaks]{Post-Training Quantization Experimental Process}
+    We apply GPTQ-based post-training quantization to compress the fine-tuned VAST model from FP16 to INT4 precision, achieving approximately 4× model size reduction while preserving retrieval performance.
+
+    \textbf{Quantization Setup:} The quantization is performed on the fine-tuned VAST model using MS-Swift's GPTQ implementation. We configure the quantization to target INT4 precision with the following key parameters: group size of 128 for grouped quantization, symmetric quantization (sym=true), and sequential quantization (\texttt{true\_sequential}=true) to maintain layer dependencies. The quantization is selectively applied only to the vision encoder blocks (\texttt{vision\_encoder.visual.blocks}), preserving the full precision of other components including the text encoder and audio branches.
+
+    \textbf{Calibration Data:} We use 200 calibration samples in JSONL format, each containing text queries and corresponding image frame sequences. During quantization, these samples are forward-passed through the model to collect activation statistics for each layer. The collected activations are used to compute Hessian matrices, which guide the quantization parameter optimization to minimize reconstruction error.
+
+    \textbf{Quantization Process:} The quantization proceeds block-by-block through 40 vision encoder blocks. For each block, four linear modules are quantized sequentially: attention QKV projection (\texttt{attn.qkv}), attention output projection (\texttt{attn.proj}), and MLP layers (\texttt{mlp.fc1}, \texttt{mlp.fc2}). The process involves collecting activations from calibration data, computing Hessian matrices for weight sensitivity, performing grouped quantization (group size 128) to convert FP16 weights to INT4, and applying error compensation. Weights are transformed from FP16 (16 bits) to INT4 (4 bits) with per-group scaling factors, achieving approximately 4× compression with 4 INT4 values packed into 1 INT16 for storage.
+
+    The quantized VAST model maintains competitive retrieval performance with significantly reduced model size and memory footprint, enabling more efficient deployment for real-time video-text retrieval applications.
+\end{frame}
+
+\begin{frame}[allowframebreaks]{Quantization Results and Comparison}
+    Table~\ref{tab:quantization_comparison} presents a comprehensive comparison between the original FP16 model and the quantized INT4 model, demonstrating the effectiveness of the GPTQ-based quantization approach.
+
+    \begin{table}
+        \centering
+        \caption{Comparison of Model Statistics Before and After Quantization}
+        \label{tab:quantization_comparison}
+        \begin{tabular}{l c c c}
+        \toprule
+        \textbf{Metric} & \textbf{FP16} & \textbf{INT4} & \textbf{Ratio} \\
+        \midrule
+        File Size & 5.20 GB & 1.86 GB & 2.80× \\
+        Total Parameters & 1,396.66M & 522.85M & 2.67× \\
+        Vision Encoder & 1,136.44M & 262.62M & 4.33× \\
+        Total Weight Size & 5.33 GB & 1.99 GB & 2.67× \\
+        \bottomrule
+        \end{tabular}
+    \end{table}
+
+    The quantization results demonstrate effective compression: the vision encoder achieved 4.33× compression, closely matching the theoretical 4× ratio for INT4 quantization. The overall model size was reduced from 5.20 GB to 1.86 GB (2.80×), while the total compression ratio (2.67×) is lower due to other components remaining at full FP32 precision as part of the selective quantization strategy.
+
+    \framebreak
+    Table~\ref{tab:quantization_performance} presents the retrieval performance comparison on the suscape test set (autonomous driving scenario dataset) before and after quantization.
+
+    \begin{table}
+        \centering
+        \caption{Retrieval Performance Comparison on Suscape Test Set}
+        \label{tab:quantization_performance}
+        \begin{tabular}{l c c}
+        \toprule
+        \textbf{Metric} & \textbf{FP16} & \textbf{INT4} \\
+        \midrule
+        Recall@1 & 64.4 & 37.3 \\
+        Recall@5 & 88.7 & 55.9 \\
+        Recall@10 & 97.2 & 65.2 \\
+        Average Recall & 83.4 & 52.8 \\
+        \bottomrule
+        \end{tabular}
+    \end{table}
+
+    The quantized model shows expected performance degradation compared to the full-precision model. Despite the performance drop, the quantized model maintains reasonable retrieval capabilities while achieving significant model size reduction.
+\end{frame}
+
+\section{Conclusion}
+
+\begin{frame}[allowframebreaks]{Conclusion}
+    In this work, we explored efficient approaches for video-text retrieval in autonomous driving scenarios, focusing on Knowledge Distillation and Post-Training Quantization to address the trade-off between accuracy and computational cost.
+
+    In the domain of Knowledge Distillation, we successfully optimized the training efficiency of the TeachCLIP framework by implementing an offline feature pre-computation strategy, achieving a 9.7\% speedup. We further investigated the flexibility of the framework by replacing the student encoder with ConvNeXt and the teacher with InternVideo2.5. Our results highlight that while stronger teachers and inductive biases have potential, direct substitution requires careful hyperparameter tuning and specialized temporal modeling to fully realize performance gains.
+
+    For Model Quantization, we applied GPTQ INT4 quantization to the VAST model using MS-Swift. We achieved a significant reduction in model size (from 5.20 GB to 1.86 GB), demonstrating the feasibility of deploying large foundation models on constrained hardware. However, the observed drop in Recall@1 (from 64.4\% to 37.3\%) indicates that aggressive quantization to 4-bit precision requires advanced mitigation strategies, such as Quantization-Aware Training (QAT) or mixed-precision techniques, to preserve fine-grained retrieval capabilities.
+
+    Future work will focus on two directions: (1) refining the distillation process for InternVideo2.5 by aligning feature spaces and loss weights more effectively, and (2) exploring recovery strategies for quantized models to minimize accuracy degradation while maintaining efficiency. Ultimately, these efforts contribute to building scalable and responsive video retrieval systems for the autonomous driving industry.
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+    \bibliographystyle{IEEEtran}
+    \bibliography{reference}
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Huge \textbf{Thank You!}
+    
+    \vspace{1cm}
+    \Large Q \& A
+\end{frame}
+
+\end{document}
