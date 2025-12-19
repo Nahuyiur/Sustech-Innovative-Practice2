@@ -214,13 +214,33 @@ Table \ref{tab:teachclip_vs_xclip} presents the comparison of parameters and FLO
 \end{table}
 
 \section{Alterations on TeachCLIP}
+\subsection{Feature Pre-computation Acceleration}
+
+We precompute and cache frame-level visual features offline to eliminate the expensive video encoding overhead from the training loop. Specifically, each video is sampled into a fixed number of frames ($F$), and every frame is processed by the \textbf{teacher model (X-CLIP)}'s visual encoder to obtain high-level semantic embeddings (e.g., 512-D per frame for ViT-B/32). The resulting feature tensor $\mathbf{V}\in\mathbb{R}^{F\times d}$ is saved alongside a binary frame mask $\mathbf{m}\in\{0,1\}^{F}$ to handle varying video lengths.
+
+During distillation training, the student directly loads the pre-computed pair $(\mathbf{V}, \mathbf{m})$, bypassing the need to re-encode raw pixels. This strategy significantly enhances throughput and reproducibility. As shown in Table~\ref{tab:speed-comparison}, this optimization yields a measurable speedup in training time per step.
+
+\begin{table}[h]
+\centering
+\caption{Training Efficiency with Precomputed Teacher Features}
+\label{tab:speed-comparison}
+\begin{tabular}{p{4.5cm} c c}
+\toprule
+\textbf{Setting} & \textbf{Time/step (s)} & \textbf{Speedup} \\
+\midrule
+Online Extraction (Baseline) & 1.91 & -- \\
+Offline Pre-computation & \textbf{1.74} & \textbf{+9.7\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{On Student Model}
 
-We explored replacing the Transformer-based visual encoder (ViT) in the student model with a Convolutional Neural Network (CNN) architecture, specifically ConvNeXt, leveraging the pre-trained weights from OpenCLIP~\cite{ilharco_gabriel_2021_5143773}. The motivation behind this substitution lies in the inherent inductive biases of CNNs, such as translation invariance and locality, which can be advantageous for visual feature extraction. Additionally, lightweight CNN variants offer potential improvements in inference efficiency and reduced memory footprint compared to heavy ViT-based models.
+We investigated replacing the Transformer-based visual encoder (ViT) in the student model with ConvNeXt, leveraging the open-source implementation and pre-trained weights from OpenCLIP~\cite{ilharco_gabriel_2021_5143773}, which provides reproducible training of CLIP models across diverse architectures. The objective was to explore whether CNN inductive biases, such as translation invariance and locality, could offer advantages in visual feature extraction or efficiency compared to the standard ViT. However, as detailed below, realizing these potential benefits in the video domain proved non-trivial.
 
 \subsubsection{Exploration under OpenCLIP Framework (COCO Dataset)}
 
-To validate the feasibility of ConvNeXt as a visual encoder and identify effective fine-tuning strategies, we first conducted a series of experiments on the relatively smaller COCO dataset using ConvNeXtV2-Tiny. We compared three main strategies: full fine-tuning (No Freeze), gradual unfreezing (Unfreeze 3-5), and replacing the text tower. The results, summarized in Table~\ref{tab:coco_tiny}, indicate that full fine-tuning leads to overfitting due to the large parameter space relative to the data size. Conversely, a strategy of "controlled trainable subsets with gradual unfreezing"---specifically, unfreezing the text tower at epoch 3 and the visual tower at epoch 5---yielded the best performance (I2T R@1: 9.55\%), serving as a constrained fine-tuning approach that balances plasticity and stability.
+We first validated fine-tuning strategies on COCO using ConvNeXtV2-Tiny. As shown in Table~\ref{tab:coco_tiny}, full fine-tuning caused overfitting, whereas a "controlled gradual unfreezing" strategy (unfreezing text at epoch 3, visual at epoch 5) achieved the best balance (I2T R@1: 9.55\%).
 
 \begin{table}[h]
 \centering
@@ -237,7 +257,7 @@ Change Text Tower + Unfreeze & 9.07\% & Intermediate performance \\
 \end{tabular}
 \end{table}
 
-Building on the Tiny experiments, we further optimized the approach using a larger model, ConvNeXt-Base with an attentional pooling layer (`absattn`), exploring four iterative strategies. As shown in Table~\ref{tab:coco_base}, we started with a baseline using a three-stage unfreezing schedule. Introducing knowledge distillation from a teacher model while keeping the student frozen significantly improved performance by providing strong regularization. However, attempting to unfreeze the backbone in later stages under distillation degraded performance, suggesting that the added freedom undermined the distillation constraints. The most effective strategy proved to be removing distillation but introducing a Head-level Alignment loss (`headalign`) combined with earlier, small-scale unfreezing. This approach achieved the highest R@1 of 13.11\%, demonstrating that a well-designed alignment loss with precise unfreezing rhythms can outperform simple distillation.
+Extending this to ConvNeXt-Base with attentional pooling (`absattn`), we tested four strategies (Table~\ref{tab:coco_base}). While distillation with a frozen student provided strong regularization, the optimal performance (R@1: 13.11\%) was achieved by removing distillation in favor of a Head-level Alignment loss (`headalign`) combined with early, small-scale unfreezing. This demonstrates that precise alignment losses with unfreezing schedules can outperform standard distillation.
 
 \begin{table}[h]
 \centering
@@ -257,7 +277,7 @@ Distill + Late Unfreeze & 12.98\% & Unfreezing hurts distillation constraint \\
 
 \subsubsection{Preliminary Implementation on TeachCLIP (MSRVTT Dataset)}
 
-Applying these insights to the video retrieval task, we integrated the ConvNeXt-Base encoder initialized from OpenCLIP into the TeachCLIP student framework. We tested the direct migration of the architecture on the MSRVTT dataset. However, as shown in Table~\ref{tab:msrvtt_res}, the preliminary results were suboptimal compared to the image-text experiments. Even with a strategy that locked the encoder and only trained the alignment heads, the performance remained limited (Text-to-Video R@1 $\approx$ 2.6--3.4\%). This suggests that a direct replacement of the student encoder without specialized adaptation for video temporal dynamics---such as the `absattn` or more complex temporal aggregation modules validated in the OpenCLIP experiments---is insufficient. Future work is needed to better adapt the convolutional features for temporal coherence in video tasks.
+We integrated the ConvNeXt-Base encoder into TeachCLIP for video retrieval on MSRVTT. However, direct migration yielded suboptimal results (Table~\ref{tab:msrvtt_res}, R@1 $\approx$ 2.6--3.4\%), even with locked encoders. This indicates that simple encoder substitution is insufficient; effective adaptation requires specialized temporal modeling (e.g., `absattn`) to capture video dynamics, marking a key direction for future optimization.
 
 \begin{table}[h]
 \centering
@@ -273,7 +293,38 @@ MSRVTT-7k (16 epochs, Locked Encoder) & 2.6\% \\
 \bottomrule
 \end{tabular}
 \end{table}
-\subsection{On teacher model}
+\subsection{On Teacher Model}
+
+To utilize the computationally expensive InternVideo2.5 as a teacher without the overhead of online inference, we implemented an "Offline Feature Extraction - Online Loading" scheme:
+
+\paragraph{1. Offline Feature Pre-computation}
+To avoid expensive repeated inference, we pre-compute and store InternVideo2.5 features (global, text, frame-level) as a local knowledge base.
+
+\paragraph{2. Data Pipeline Index Alignment}
+We implemented unique Sample IDs to strictly align shuffled student inputs with the corresponding offline teacher features.
+
+\paragraph{3. Training Logic Adaptation}
+The training loop was refactored to skip teacher inference, instead utilizing an 'Offline Feature Loader' to feed pre-computed similarity matrices and weights directly into the distillation loss.
+
+\subsubsection{Results on MSRVTT}
+
+We evaluated the performance of the student model distilled from different teachers on the MSRVTT dataset. As shown in Table~\ref{tab:teacher_comparison}, although InternVideo2.5 demonstrates superior performance as a teacher, the student model distilled from it (TeachCLIP w/ InternVideo2.5) currently underperforms the baseline distilled from X-CLIP. This performance drop is likely due to suboptimal hyperparameter settings (e.g., temperature, loss weights) when aligning with the new teacher's distribution, indicating that further tuning and optimization are required in future work.
+
+\begin{table}[h]
+\centering
+\caption{Comparison of Different Teachers on MSRVTT}
+\label{tab:teacher_comparison}
+\begin{tabular}{p{5.5cm} c c c}
+\toprule
+\textbf{Model} & \textbf{R@1} & \textbf{R@5} & \textbf{R@10} \\
+\midrule
+X-CLIP & 49.3 & 75.8 & 84.8 \\
+TeachCLIP (Teacher: X-CLIP) & 46.8 & 74.9 & 82.9 \\
+InternVideo2.5 (Teacher) & 55.9 & 78.3 & 85.1 \\
+TeachCLIP (Teacher: InternVideo2.5) & 42.8 & 70.2 & 80.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Post-Training Quantization of VAST Model using MS-Swift}
 
