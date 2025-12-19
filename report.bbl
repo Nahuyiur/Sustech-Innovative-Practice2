@@ -44,4 +44,20 @@ J.~Dong, M.~Zhang, Z.~Zhang, X.~Chen, D.~Liu, X.~Qu, X.~Wang, and B.~Liu,
   video retrieval,'' in \emph{Proceedings of the IEEE/CVF International
   Conference on Computer Vision (ICCV)}, 2023, pp. 11\,302--11\,312.
 
+\bibitem{zhao2024swiftascalablelightweightinfrastructure}
+\BIBentryALTinterwordspacing
+Y.~Zhao, J.~Huang, J.~Hu, X.~Wang, Y.~Mao, D.~Zhang, H.~Zhang, Z.~Jiang, Z.~Wu,
+  B.~Ai, A.~Wang, W.~Zhou, and Y.~Chen, ``Swift: A scalable lightweight
+  infrastructure for fine-tuning,'' 2024. [Online]. Available:
+  \url{https://arxiv.org/abs/2408.05517}
+\BIBentrySTDinterwordspacing
+
+\bibitem{chen2023vast}
+\BIBentryALTinterwordspacing
+S.~Chen, H.~Li, Q.~Wang, Z.~Zhao, M.~Sun, X.~Zhu, and J.~Liu, ``Vast: A
+  vision-audio-subtitle-text omni-modality foundation model and dataset,''
+  \emph{Advances in Neural Information Processing Systems}, vol.~36, 2023,
+  neurIPS 2023. [Online]. Available: \url{https://arxiv.org/abs/2305.18500}
+\BIBentrySTDinterwordspacing
+
 \end{thebibliography}

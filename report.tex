@@ -60,11 +60,7 @@ Other notable approaches include \textbf{attention-based distillation}for transf
 
 \subsection{DLDKD}
 
-DLDKD (Dual Learning with Dynamic Knowledge Distillation)~\cite{dong2023dual} represents a sophisticated knowledge distillation framework specifically designed for video understanding tasks, particularly video retrieval in autonomous driving scenarios. The
-architecture employs a dual-stream teacher-student framework that effectively transfers rich multimodal knowledge from a large-scale teacher model to a lightweight student model while maintaining competitive retrieval performance.
-
-\subsubsection{Framework}
-The DLDKD framework architecture is illustrated in Figure \ref{fig:dldkd}.
+DLDKD (Dual Learning with Dynamic Knowledge Distillation)~\cite{dong2023dual} employs a dual-stream teacher-student framework that transfers knowledge from a large teacher model to a lightweight student model through multi-level distillation.
 
 \begin{figure}[h]
 \centering
@@ -73,27 +69,63 @@ The DLDKD framework architecture is illustrated in Figure \ref{fig:dldkd}.
 \label{fig:dldkd}
 \end{figure}
 
-\subsubsection{Teacher-Student Architecture}
-The DLDKD frameworkconsists of two key components: a large teacher model and a compact student model. The teacher model is typically a pretrained large-scale vision-language model (VLM) with extensive parameters, capable of capturing complex spatiotemporal relationships in video sequences. 
-This teacher model serves as the knowledge source, providing rich feature representations and semantic understanding of video content. 
-The teacher architecture typically incorporates multiple transformer layers with cross-modal attention mechanisms, enabling it to effectively align visual features with textual descriptions.
+DLDKD performs distillation at multiple levels: feature-level distillation transfers intermediate representations, logit-level distillation aligns output distributions, and attention-level distillation preserves attention patterns.
 
-In contrast, the student model is designed with a significantly reduced parameter count and computational complexity, making it suitable for deployment on resource-constrained edge devices commonly used in autonomous driving systems.
-The student architecture maintains a similar structural design to the teacher but with fewer layers, reduced hidden dimensions, and optimized attention mechanisms. Despite its compact nature, the student model is trained to mimic the teacher’s behavior through carefully designed distillation objectives.
+\subsubsection{Loss Functions}
+The DLDKD framework employs a dual learning objective that combines knowledge from the teacher model with task-specific learning through two student branches. The total loss function is defined as:
 
-The distillation process in DLDKD operates at multiple levels: feature-level distillation transfers intermediate representations from the teacher's encoder layers to corresponding 2 layers in the student, logit-level distillation aligns the final
-output distributions, and attention-level distillation preserves the teacher's focus patterns. This multi-level knowledge transfer ensures that the student model captures both low-level
-visual features and high-level semantic understanding from the teacher, enabling effective knowledge compression without significant performance degradation.
+\begin{equation}
+\mathcal{L}_{total} = \lambda_I \mathcal{L}_I + \lambda_E \mathcal{L}_E + \mathcal{L}_{task}
+\end{equation}
 
-\subsubsection{Application to Video Retrieval}
-In the context of video retrieval for autonomous driving scenarios, DLDKD addresses the critical challenge of efficiently matching textual queries with relevant video segments. The teacher model, pretrained on large-scale video-text datasets, possesses strong capabilities in understanding complex driving scenarios, including object
-detection, motion analysis, and scene understanding. During the distillation process, the student model learns to replicate these capabilities in a more efficient manner.
+where $\lambda_I$ and $\lambda_E$ are dynamic weights that adjust the contribution of the inheritance branch and exploration branch losses, respectively.
 
-For video retrieval tasks, the DLDKD framework processes input videos through the student model's encoder to extract compact yet discriminative feature representations. These features are then compared with query embeddings in a shared semantic space, enabling efficient similarity computation. 
-The distillation process ensures that the student model maintains the teacher's ability to understand fine-grained visual details crucial for autonomous driving scenarios, such as vehicle types, traffic conditions, weather patterns, and road infrastructure.
+\textbf{Inheritance Student Branch Loss ($\mathcal{L}_I$):} The inheritance branch learns to absorb knowledge from the teacher model through multi-level distillation. The loss combines feature-level, logit-level, and attention-level distillation:
 
-The application of DLDKD to video retrieval offers several advantages: first, the lightweight student model enables real-time retrieval on edge devices, which is essential for autonomous driving applications requiring low-latency responses. Second, the knowledge transferred from the teacher model helps the student generalize better to diverse driving scenarios, even when trained on limited domain-specific data. 
-Third, the multi-level distillation approach preserves the teacher's ability to handle complex queries involving multiple objects, temporal relationships, and spatial configurations, which are common in autonomous driving video retrieval tasks.
+\begin{equation}
+\mathcal{L}_I = \alpha_f \mathcal{L}_{feat} + \alpha_l \mathcal{L}_{logit} + \alpha_a \mathcal{L}_{attn}
+\end{equation}
+
+where $\alpha_f$, $\alpha_l$, and $\alpha_a$ are weights for feature-level, logit-level, and attention-level distillation losses, respectively.
+
+The feature-level distillation loss aligns intermediate representations between teacher and student:
+\begin{equation}
+\mathcal{L}_{feat} = \frac{1}{N}\sum_{i=1}^{N} \|F_t^{(i)} - F_s^{(i)}\|_2^2
+\end{equation}
+where $F_t^{(i)}$ and $F_s^{(i)}$ denote the feature representations at layer $i$ from the teacher and student models, respectively, and $N$ is the number of layers used for feature distillation.
+
+The logit-level distillation loss uses KL divergence to align output distributions:
+\begin{equation}
+\mathcal{L}_{logit} = \text{KL}(\text{softmax}(z_t/\tau) \| \text{softmax}(z_s/\tau))
+\end{equation}
+where $z_t$ and $z_s$ are the logits from teacher and student models, and $\tau$ is the temperature parameter for softening the distributions.
+
+The attention-level distillation loss preserves the teacher's attention patterns:
+\begin{equation}
+\mathcal{L}_{attn} = \frac{1}{L}\sum_{l=1}^{L} \|A_t^{(l)} - A_s^{(l)}\|_F^2
+\end{equation}
+where $A_t^{(l)}$ and $A_s^{(l)}$ are attention maps at layer $l$ from teacher and student models, $L$ is the number of attention layers, and $\|\cdot\|_F$ denotes the Frobenius norm.
+
+\textbf{Exploration Student Branch Loss ($\mathcal{L}_E$):} The exploration branch focuses on task-specific learning to capture domain-specific patterns that may not be fully represented in the teacher model:
+\begin{equation}
+\mathcal{L}_E = -\frac{1}{B}\sum_{i=1}^{B} \log \frac{\exp(\text{sim}(v_i, t_i^+)/\tau_E)}{\sum_{j=1}^{B} \exp(\text{sim}(v_i, t_j)/\tau_E)}
+\end{equation}
+where $B$ is the batch size, $v_i$ is the video embedding, $t_i^+$ is the positive text query, $\text{sim}(\cdot,\cdot)$ computes cosine similarity, and $\tau_E$ is the temperature parameter for the exploration branch.
+
+\textbf{Task-Specific Loss ($\mathcal{L}_{task}$):} The task loss ensures that the final model performs well on the video-text retrieval task:
+\begin{equation}
+\mathcal{L}_{task} = \mathcal{L}_{retrieval} = -\log P(v^+ | t) - \log P(t^+ | v)
+\end{equation}
+where $P(v^+ | t)$ and $P(t^+ | v)$ represent the probabilities of retrieving the correct video given text query and vice versa.
+
+\textbf{Dynamic Weight Adjustment:} The weights $\lambda_I$ and $\lambda_E$ are dynamically adjusted during training based on the performance of each branch. This allows the framework to automatically balance between teacher knowledge inheritance and task-specific exploration:
+\begin{equation}
+\lambda_I^{(t)} = \lambda_I^{(0)} \cdot \exp(-\gamma_I \cdot t), \quad \lambda_E^{(t)} = \lambda_E^{(0)} \cdot (1 + \gamma_E \cdot t)
+\end{equation}
+where $t$ is the training epoch, $\lambda_I^{(0)}$ and $\lambda_E^{(0)}$ are initial weights, and $\gamma_I$, $\gamma_E$ are decay/growth rates that control the dynamic adjustment schedule.
+
+\subsubsection{Feature Pre-Extraction Strategy}
+DLDKD employs feature pre-extraction to accelerate training: teacher model features are pre-computed and cached for all training samples before distillation training, eliminating repeated forward passes through the teacher model during training. In the subsequent modifications to TeachCLIP, we will incorporate this feature pre-extraction strategy to shorten the training time.
 
 \subsection{TeachCLIP}
 \subsubsection{Inspiration}
@@ -184,6 +216,67 @@ Table \ref{tab:teachclip_vs_xclip} presents the comparison of parameters and FLO
 \section{Alterations on TeachCLIP}
 \subsection{On student model}
 \subsection{On teacher model}
+
+\section{Post-Training Quantization of VAST Model using MS-Swift}
+
+In this section, we apply post-training quantization methods introduced in MS-Swift~\cite{zhao2024swiftascalablelightweightinfrastructure} to compress the VAST model~\cite{chen2023vast} for video-text retrieval tasks. Post-training quantization is a model compression technique that reduces the precision of model weights and activations after the model has been fully trained, enabling efficient deployment on resource-constrained devices without requiring retraining from scratch.
+
+\subsection{MS-Swift Quantization Architecture and Methodology}
+
+MS-Swift (ModelScope Swift)~\cite{zhao2024swiftascalablelightweightinfrastructure} provides a comprehensive quantization framework that supports various quantization strategies for large-scale models. The quantization architecture in MS-Swift is designed to be modular and flexible, allowing users to apply different quantization schemes to different parts of the model based on their sensitivity to precision loss.
+
+The key components of MS-Swift's quantization framework include:
+
+\textbf{Quantization Strategies:} MS-Swift supports multiple quantization approaches, including uniform quantization, dynamic quantization, and static quantization. For post-training quantization, the framework primarily employs static quantization, where quantization parameters (scales and zero-points) are calibrated using a small representative dataset. This approach balances model compression ratio and accuracy retention.
+
+\textbf{Precision Schemes:} The framework supports various bit-width configurations, including 8-bit integer (INT8) quantization for weights and activations, mixed-precision quantization where critical layers maintain higher precision (FP16 or FP32), and adaptive quantization that automatically selects optimal bit-widths for different layers based on their contribution to the final output.
+
+\textbf{Calibration Process:} MS-Swift's quantization pipeline includes a calibration phase where a small subset of training data is used to compute quantization parameters. During calibration, the framework collects activation statistics to determine appropriate scale factors and zero-points that minimize quantization error. The calibration process ensures that the quantized model maintains performance close to the full-precision model.
+
+\textbf{Quantization-Aware Operations:} The framework provides optimized implementations of common operations (matrix multiplication, convolution, layer normalization) that work efficiently with quantized tensors, ensuring that the quantized model can leverage hardware acceleration available on modern processors.
+
+\subsection{VAST Architecture for Video-Text Retrieval}
+
+VAST (Vision-Audio-Subtitle-Text)~\cite{chen2023vast} is an omni-modality foundation model. The VAST framework architecture is illustrated in Figure \ref{fig:vast}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{images/vast_framework.png}
+\caption{The framework of VAST.}
+\label{fig:vast}
+\end{figure}
+
+For video-text retrieval, VAST employs dual encoders: a video encoder that processes frames through a ViT architecture with temporal modeling, and a text encoder based on transformer architecture. The model learns cross-modal alignment in a shared embedding space, using contrastive learning to maximize similarity between matching video-text pairs.
+
+The VAST model achieves strong performance in video-text retrieval after fine-tuning on domain-specific data. Given the model's size, there is room for further lightweight optimization to better adapt to real-time applications. We therefore apply post-training quantization to obtain smaller model weights while maintaining competitive performance.
+
+\subsection{Post-Training Quantization Experimental Process}
+
+We perform post-training quantization on the fine-tuned VAST model weights using MS-Swift's quantization framework. The experimental process consists of the following steps:
+
+\textbf{Model Preparation:} We start with a VAST model that has been fine-tuned on our target video-text retrieval dataset. The fine-tuned model serves as the full-precision baseline, providing reference accuracy metrics for comparison with the quantized version.
+
+\textbf{Calibration Dataset Preparation:} A representative subset of the training dataset is selected for calibration. This calibration set typically consists of 100-1000 samples that cover the diversity of the full dataset. The calibration data is used to compute quantization parameters without requiring gradient computation or backpropagation.
+
+\textbf{Quantization Configuration:} We configure the quantization settings using MS-Swift's API, specifying:
+\begin{itemize}
+    \item Target precision: INT8 for both weights and activations
+    \item Quantization scheme: Static quantization with calibration
+    \item Layer-wise precision: Maintaining FP32 precision for sensitive layers (e.g., layer normalization, final projection layers)
+    \item Calibration method: Min-max calibration or percentile-based calibration
+\end{itemize}
+
+\textbf{Quantization Execution:} The quantization process is performed in two phases:
+\begin{enumerate}
+    \item \textit{Calibration Phase:} The calibration dataset is passed through the model in inference mode. Activation statistics are collected for each layer to determine optimal quantization scales and zero-points.
+    \item \textit{Conversion Phase:} The full-precision model weights are quantized to INT8 using the calibrated parameters, and the model graph is transformed to use quantized operations.
+\end{enumerate}
+
+\textbf{Evaluation:} The quantized model is evaluated on the test set to assess the impact of quantization on retrieval performance. Key metrics include retrieval accuracy (Recall@K for K=1, 5, 10), mean reciprocal rank (MRR), and inference latency. Additionally, we measure the model size reduction and memory footprint to quantify the compression benefits.
+
+\textbf{Performance Optimization:} If the quantized model shows significant accuracy degradation, we apply fine-tuning strategies such as quantization-aware fine-tuning (QAT) on the quantized model, or adjust the quantization configuration to use mixed-precision quantization for critical layers.
+
+The quantized VAST model, achieved through MS-Swift's post-training quantization, enables efficient deployment while maintaining competitive retrieval performance, making it suitable for real-time video-text retrieval applications in autonomous driving scenarios.
 
 
 \section{Conclusion}
