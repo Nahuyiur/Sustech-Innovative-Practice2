@@ -202,7 +202,7 @@ Table \ref{tab:teachclip_vs_xclip} presents the comparison of parameters and FLO
 \centering
 \caption{Comparison of Parameters and FLOPs}
 \label{tab:teachclip_vs_xclip}
-\begin{tabular}{p{1.4cm} p{1.2cm} p{2.2cm} p{3.2cm}}
+\begin{tabular}{p{1.4cm} p{1.1cm} p{2.1cm} p{3.4cm}}
 \toprule
 \textbf{Model} & \textbf{Parameters} & \textbf{FLOPs (Inference)} & \textbf{Description} \\
 \midrule
@@ -214,7 +214,65 @@ Table \ref{tab:teachclip_vs_xclip} presents the comparison of parameters and FLO
 \end{table}
 
 \section{Alterations on TeachCLIP}
-\subsection{On student model}
+\subsection{On Student Model}
+
+We explored replacing the Transformer-based visual encoder (ViT) in the student model with a Convolutional Neural Network (CNN) architecture, specifically ConvNeXt, leveraging the pre-trained weights from OpenCLIP~\cite{ilharco_gabriel_2021_5143773}. The motivation behind this substitution lies in the inherent inductive biases of CNNs, such as translation invariance and locality, which can be advantageous for visual feature extraction. Additionally, lightweight CNN variants offer potential improvements in inference efficiency and reduced memory footprint compared to heavy ViT-based models.
+
+\subsubsection{Exploration under OpenCLIP Framework (COCO Dataset)}
+
+To validate the feasibility of ConvNeXt as a visual encoder and identify effective fine-tuning strategies, we first conducted a series of experiments on the relatively smaller COCO dataset using ConvNeXtV2-Tiny. We compared three main strategies: full fine-tuning (No Freeze), gradual unfreezing (Unfreeze 3-5), and replacing the text tower. The results, summarized in Table~\ref{tab:coco_tiny}, indicate that full fine-tuning leads to overfitting due to the large parameter space relative to the data size. Conversely, a strategy of "controlled trainable subsets with gradual unfreezing"---specifically, unfreezing the text tower at epoch 3 and the visual tower at epoch 5---yielded the best performance (I2T R@1: 9.55\%), serving as a constrained fine-tuning approach that balances plasticity and stability.
+
+\begin{table}[h]
+\centering
+\caption{Comparison of ConvNeXtV2-Tiny Strategies on COCO}
+\label{tab:coco_tiny}
+\begin{tabular}{p{3.0cm} p{1.2cm} p{3.8cm}}
+\toprule
+\textbf{Strategy} & \textbf{I2T R@1} & \textbf{Observation} \\
+\midrule
+No Freeze (Full Fine-tuning) & 8.12\% & Overfitting, worst performance \\
+\textbf{Unfreeze 3-5 (Gradual)} & \textbf{9.55\%} & \textbf{Best balance, effective constraint} \\
+Change Text Tower + Unfreeze & 9.07\% & Intermediate performance \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Building on the Tiny experiments, we further optimized the approach using a larger model, ConvNeXt-Base with an attentional pooling layer (`absattn`), exploring four iterative strategies. As shown in Table~\ref{tab:coco_base}, we started with a baseline using a three-stage unfreezing schedule. Introducing knowledge distillation from a teacher model while keeping the student frozen significantly improved performance by providing strong regularization. However, attempting to unfreeze the backbone in later stages under distillation degraded performance, suggesting that the added freedom undermined the distillation constraints. The most effective strategy proved to be removing distillation but introducing a Head-level Alignment loss (`headalign`) combined with earlier, small-scale unfreezing. This approach achieved the highest R@1 of 13.11\%, demonstrating that a well-designed alignment loss with precise unfreezing rhythms can outperform simple distillation.
+
+\begin{table}[h]
+\centering
+\caption{Iterative Optimization of ConvNeXt-Base on COCO}
+\label{tab:coco_base}
+\begin{tabular}{p{3.5cm} p{1.2cm} p{3.3cm}}
+\toprule
+\textbf{Strategy} & \textbf{I2T R@1} & \textbf{Note} \\
+\midrule
+Baseline (3-stage Unfreeze) & 12.34\% & Standard gradual unfreezing \\
+Distill + Frozen & 13.10\% & Strong regularization via teacher \\
+Distill + Late Unfreeze & 12.98\% & Unfreezing hurts distillation constraint \\
+\textbf{Head Align + Early Unfreeze} & \textbf{13.11\%} & \textbf{Best strategy, replaces distillation} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Preliminary Implementation on TeachCLIP (MSRVTT Dataset)}
+
+Applying these insights to the video retrieval task, we integrated the ConvNeXt-Base encoder initialized from OpenCLIP into the TeachCLIP student framework. We tested the direct migration of the architecture on the MSRVTT dataset. However, as shown in Table~\ref{tab:msrvtt_res}, the preliminary results were suboptimal compared to the image-text experiments. Even with a strategy that locked the encoder and only trained the alignment heads, the performance remained limited (Text-to-Video R@1 $\approx$ 2.6--3.4\%). This suggests that a direct replacement of the student encoder without specialized adaptation for video temporal dynamics---such as the `absattn` or more complex temporal aggregation modules validated in the OpenCLIP experiments---is insufficient. Future work is needed to better adapt the convolutional features for temporal coherence in video tasks.
+
+\begin{table}[h]
+\centering
+\caption{Preliminary Results of ConvNeXt-based Student on MSRVTT}
+\label{tab:msrvtt_res}
+\begin{tabular}{p{5.5cm} p{2.5cm}}
+\toprule
+\textbf{Setting} & \textbf{Text-to-Video R@1} \\
+\midrule
+MSRVTT-9k (10 epochs) & 3.4\% \\
+MSRVTT-7k (10 epochs) & 2.5\% \\
+MSRVTT-7k (16 epochs, Locked Encoder) & 2.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
 \subsection{On teacher model}
 
 \section{Post-Training Quantization of VAST Model using MS-Swift}
