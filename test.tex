@@ -1,0 +1,240 @@
+\documentclass[lettersize,journal]{IEEEtran}
+\usepackage{amsmath,amsfonts}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{cite}
+\usepackage{balance}
+\usepackage[colorlinks=true,linkcolor=blue]{hyperref}
+\usepackage{listings}
+\usepackage{booktabs} % 用于专业排版的表格宏包
+\usepackage{multirow} % 用于合并单元格的宏包
+\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Video Retrieval of Autonomous Driving Scenarios Based on Large Models}
+\author{12310520 Rui Yuhan   12310437 Qiao Shihan}
+
+
+\maketitle
+
+\begin{abstract}
+Video retrieval in autonomous driving scenarios demands models to comprehend complex visual environments and align them with detailed textual descriptions. While multimodal large language models (MLLMs) have demonstrated potential in vision-language tasks, their application to domain-specific video retrieval remains underexplored. Furthermore, the scarcity of publicly available high-quality annotated video data in the autonomous driving domain makes it challenging for models to accurately learn video content semantics from limited data. Additionally, significant differences exist between autonomous driving videos and those in general video datasets, leading to suboptimal performance of generic large models on autonomous driving datasets.
+
+To address these challenges, we evaluate the performance of two distinct pretrained MLLMs on a carefully curated autonomous driving dataset. This dataset features high-quality captions that have undergone multi-round optimization, combining human annotation expertise with advanced automated labeling techniques, while also serving as a benchmark platform for exploring more efficient annotation strategies. Experimental results demonstrate that our approach effectively retrieves relevant video segments based on textual queries, highlighting the potential of MLLMs to enhance retrieval accuracy and scalability.
+
+\end{abstract}
+
+\begin{IEEEkeywords}
+Autonomous Driving Video Retrieval, Multimodal Large Language Models (MLLMs), Video Understanding, Automated Annotation Optimization
+\end{IEEEkeywords}
+
+
+\section{Introduction}
+
+
+\section{Conclusion}
+
+Autonomous driving video retrieval presents unique challenges due to the complexity of real-world driving scenarios and the scarcity of high-quality annotated datasets. In this work, we explored the potential of multimodal large language models (MLLMs) to bridge the gap between visual perception and textual understanding in autonomous driving contexts. By leveraging a carefully curated dataset with optimized annotations, combining human expertise and automated refinement using Video-LLama2, we demonstrated that pretrained MLLMs can be effectively adapted for domain-specific video retrieval tasks.
+
+Our experiments with two state-of-the-art MLLMs (Vast and Clip-Vip) revealed that fine-tuning on high-quality annotated data significantly improves retrieval accuracy, validating the importance of robust dataset construction. Additionally, our work establishes a benchmark for future research in autonomous driving video understanding, providing a foundation for developing more interpretable and scalable retrieval systems.
+
+Moving forward, we anticipate that further advancements in MLLMs, combined with more sophisticated annotation pipelines, will enhance the generalization capabilities of autonomous driving systems. Future research could explore dynamic annotation strategies, real-time retrieval optimization, and the integration of multi-sensor data (e.g., LiDAR and radar) to further improve model performance in complex driving environments.
+
+Ultimately, this study highlights the critical role of high-quality data and domain-specific adaptation in advancing autonomous driving technologies, paving the way for safer and more intelligent transportation systems.
+
+
+
+\appendices
+\section{Complete Three-Level Label Structure}
+\label{appendix:three_level_labels}
+
+\begin{enumerate}
+    \item GoStraight
+    \begin{enumerate}
+        \item InLane
+        \begin{enumerate}
+            \item LeadVehicleConstant
+            \item LeadVehicleCutOut
+            \item VehicleCutInAhead
+            \item LeadVehicleDecelerating
+            \item LeadVehicleStopped
+            \item LeadVehicleAccelerating
+            \item LeadVehicleWrongDriveway
+            \item PedestrianCrossing
+        \end{enumerate}
+        \item ChangingLaneLeft
+        \begin{enumerate}
+            \item ObstaclesAhead
+            \item RidingLane
+            \item ObstaclesInLeftLane
+        \end{enumerate}
+        \item ChangingLaneRight
+        \begin{enumerate}
+            \item ObstaclesAhead
+            \item ObstaclesInRightLane
+        \end{enumerate}
+        \item ChangingTurnLeft
+        \item ChangingTurnRight
+        \item ChangingStop
+        \item Avoidance
+        \item RidingLane
+    \end{enumerate}
+    
+    \item Crossing
+    \begin{enumerate}
+        \item StopAndWait
+        \begin{enumerate}
+            \item StopAtRedLight
+            \item StopAtYellowLight
+            \item StopAtFlashGreenLight
+            \item LeadVehicleStopped
+            \item PedestrianCrossing
+            \item VehiclesCrossing
+        \end{enumerate}
+        \item Starting
+        \begin{enumerate}
+            \item ArrowLightChanged
+            \item RoundLightChanged
+        \end{enumerate}
+        \item EnterWaitingArea
+        \begin{enumerate}
+            \item RoundLightChanged
+        \end{enumerate}
+        \item GoStraight
+        \begin{enumerate}
+            \item NoVehiclesAhead
+            \item WithLeadVehicle
+            \item VehiclesCrossing
+        \end{enumerate}
+        \item TurnLeft
+        \begin{enumerate}
+            \item NoVehiclesAhead
+            \item WithLeadVehicle
+            \item VehiclesCrossing
+        \end{enumerate}
+        \item TurnRight
+        \begin{enumerate}
+            \item NoVehiclesAhead
+            \item WithLeadVehicle
+            \item VehiclesCrossing
+        \end{enumerate}
+        \item UTurn
+        \begin{enumerate}
+            \item NoVehiclesAhead
+            \item WithLeadVehicle
+            \item VehiclesCrossing
+        \end{enumerate}
+    \end{enumerate}
+    
+    \item Bridge
+    \begin{enumerate}
+        \item DriveIn
+        \item DriveOut
+    \end{enumerate}
+    
+    \item SlipRoad
+    \begin{enumerate}
+        \item DriveIn
+        \item DriveOut
+        \item Driving
+    \end{enumerate}
+\end{enumerate}
+
+
+\section{Complete Question List 1}
+\label{appendix:qa_list1}
+
+\begin{enumerate}
+    \item Is there a leading vehicle ahead driving in the same lane as the ego vehicle?
+    \item Is there a traffic light ahead?
+    \item Are there obstacles ahead?
+    \item What is the shape of the traffic light? (Round/Arrow)
+    \item Are there vehicles cutting into or out of the lane ahead?
+    \item Does the leading vehicle stop?
+    \item Are there vehicles crossing the road ahead?
+    \item Is there a pedestrian crossing the road?
+    \item Final label selection
+\end{enumerate}
+
+
+\section{Complete Question List 2}
+\label{appendix:qa_list2}
+
+\begin{enumerate}
+
+    \item Is there a leading vehicle in the current lane ahead? A leading vehicle means a vehicle or a motorcycle driving in the front exactly in the same lane as the ego vehicle or a vehicle driving in front of and in the same direction as the ego vehicle when crossing.
+    \item Is there a leading vehicle or a leading motorcycle cutting into the lane of the ego vehicle? Cutting in means the leading vehicle enters the lane of the ego vehicle from the adjacent lane ahead.
+    \item Is there a leading vehicle or a leading motorcycle cutting out of the lane of the ego vehicle? Cutting out means the leading vehicle leaves from the lane of the ego vehicle to the adjacent lane ahead.
+    \item Does the leading vehicle stop?
+    \item Is there a traffic light ahead? What is the shape, round or arrow?
+    \item Does the ego vehicle stop? If so, why does the ego vehicle stop?
+    \item Is there a vehicle or a motorcycle in the same lane as the ego vehicle but driving in the opposite direction or stopping in the lane and heading to a different direction that will influence the ego vehicle? Is there a crossing with vehicles and motorcycles driving in different directions with the ego vehicle?
+    \item Are there obstacles on the current road? Obstacles means objects excluding vehicles, motorcycles and pedestrians. If so, is the obstacle on the current lane, the left lane or the right lane?
+    \item Are there pedestrians crossing ahead that will influence the ego vehicle? Pedestrians here means person.
+    
+    \item Is the ego vehicle riding the lane? Riding the lane means the ego vehicle is driving in the middle of two lanes.
+    \item According to the previous questions and the corresponding answers, and the content of the video, which label fits the video best, LeadVehicleCutOut, VehicleCutInAhead, LeadVehicleStopped, LeadVehicleWrongDriveway or PedestrianCrossing?
+\end{enumerate}
+
+
+\section{Complete Question List 3}
+\label{appendix:qa_list3}
+\begin{enumerate}
+    \item InLane:
+    \begin{enumerate}
+        \item Is there any vehicle in front of the ego vehicle?
+        \item If there are pedestrians crossing in front of the ego vehicle, answer ”pedestrian crossing”. Otherwise skip.
+        \item What does the vehicle in front do? Change lanes, stop, or drive in the opposite direction?
+        \item If the vehicle in front changes lanes, does it enter the current lane (cutting in) or leave it (cutting out)?
+        \item Does the vehicle in front stop?
+        \item Does the vehicle in front drive in the opposite direction?
+    \end{enumerate}
+    \item ChangingLaneLeft:
+        \begin{enumerate}
+            \item Are there obstacles ahead? Obstacles exclude vehicles and pedestrians (e.g., bicycles).
+            \item If yes, are the obstacles in the left lane or directly ahead?
+            \item If no obstacles, is the ego vehicle riding the lane?
+        \end{enumerate}
+    \item StopAndWait:
+    \begin{enumerate}
+        \item Is there a traffic light ahead?
+        \item What is the color of the traffic light? Red, Yellow or Green?
+        \item If no red light, are there pedestrians crossing?
+        \item If no pedestrians, are there vehicles crossing ahead? 
+    \end{enumerate}
+
+    \item Starting:
+    \begin{enumerate}
+        \item What color is the traffic light?
+        \item Is the traffic light changing? If not, skip.
+        \item What is the shape of the traffic light? Round or Arrow?
+    \end{enumerate}
+
+    \item EnterWaitingArea:
+    \begin{enumerate}
+        \item What is the shape of the traffic light? Round or Arrow?
+    \end{enumerate}
+
+    \item GoStraight / TurnLeft / TurnRight / UTurn:
+    \begin{enumerate}
+        \item Are there vehicles ahead or not during the maneuver?
+        \item If yes, are the vehicles leading the ego vehicle or crossing in different directions?
+    \end{enumerate}
+  
+    \end{enumerate}
+
+\balance
+\bibliographystyle{IEEEtran}
+\bibliography{reference}
+
+\end{document}
