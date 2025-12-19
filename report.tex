@@ -281,17 +281,28 @@ In this section, we apply post-training quantization methods introduced in MS-Sw
 
 \subsection{MS-Swift Quantization Architecture and Methodology}
 
-MS-Swift (ModelScope Swift)~\cite{zhao2024swiftascalablelightweightinfrastructure} provides a comprehensive quantization framework that supports various quantization strategies for large-scale models. The quantization architecture in MS-Swift is designed to be modular and flexible, allowing users to apply different quantization schemes to different parts of the model based on their sensitivity to precision loss.
+MS-Swift (ModelScope Swift)~\cite{zhao2024swiftascalablelightweightinfrastructure} implements a GPTQ-based quantization framework for post-training quantization of large-scale models. While the documentation mentions uniform, dynamic, and static quantization with INT8 precision, the actual implementation focuses on GPTQ (GPT Quantization) with INT4 precision, providing a more specialized and efficient quantization approach.
 
-The key components of MS-Swift's quantization framework include:
+The key components of MS-Swift's quantization implementation include:
 
-\textbf{Quantization Strategies:} MS-Swift supports multiple quantization approaches, including uniform quantization, dynamic quantization, and static quantization. For post-training quantization, the framework primarily employs static quantization, where quantization parameters (scales and zero-points) are calibrated using a small representative dataset. This approach balances model compression ratio and accuracy retention.
+\textbf{GPTQ Quantization Method:} The framework employs GPTQ, a post-training quantization method that quantizes model weights to INT4 precision. GPTQ uses a layer-wise quantization strategy that minimizes reconstruction error by optimizing quantization parameters. The method involves grouping weights and applying quantization sequentially, which allows for better accuracy preservation compared to uniform quantization approaches.
 
-\textbf{Precision Schemes:} The framework supports various bit-width configurations, including 8-bit integer (INT8) quantization for weights and activations, mixed-precision quantization where critical layers maintain higher precision (FP16 or FP32), and adaptive quantization that automatically selects optimal bit-widths for different layers based on their contribution to the final output.
+\textbf{GPTQ Parameters:} The quantization process is configured through several key parameters:
+\begin{itemize}
+    \item \textbf{group\_size:} Controls the grouping strategy for weight quantization, determining how weights are partitioned for quantization
+    \item \textbf{sym:} Specifies whether to use symmetric quantization (sym=true) or asymmetric quantization (sym=false)
+    \item \textbf{true\_sequential:} When enabled, ensures that quantization is performed sequentially across layers, maintaining dependencies between layers during the quantization process
+\end{itemize}
 
-\textbf{Calibration Process:} MS-Swift's quantization pipeline includes a calibration phase where a small subset of training data is used to compute quantization parameters. During calibration, the framework collects activation statistics to determine appropriate scale factors and zero-points that minimize quantization error. The calibration process ensures that the quantized model maintains performance close to the full-precision model.
+\textbf{Module-Level Selective Quantization:} Rather than applying uniform quantization across the entire model, MS-Swift supports selective quantization at the module level. This allows different modules or layers to be quantized with different configurations or to remain unquantized, based on their sensitivity to quantization error and their importance to model performance.
 
-\textbf{Quantization-Aware Operations:} The framework provides optimized implementations of common operations (matrix multiplication, convolution, layer normalization) that work efficiently with quantized tensors, ensuring that the quantized model can leverage hardware acceleration available on modern processors.
+\textbf{Custom Adapters and Runtime Patches:} The framework provides mechanisms for custom adapters and runtime patches, enabling fine-grained control over the quantization process and allowing for model-specific optimizations. These adapters can be used to handle special cases or to apply quantization only to specific components of the model.
+
+\textbf{Multimodal Model Handling:} For multimodal models like VAST, the framework includes special handling mechanisms. Specifically, certain branches (such as audio branches) can be selectively excluded from quantization or masked during the quantization process, ensuring that modality-specific components maintain their full precision when necessary.
+
+\textbf{Grouped and Sequential Quantization Strategies:} The implementation supports both grouped quantization, where weights are quantized in groups (controlled by group\_size), and sequential quantization (true\_sequential), where layers are quantized one after another to maintain inter-layer dependencies. These strategies are critical for maintaining model accuracy during INT4 quantization.
+
+In practice, MS-Swift's quantization implementation is more specialized toward GPTQ-based modular quantization rather than a generic quantization framework, making it particularly suitable for large language models and multimodal foundation models where INT4 precision can achieve significant compression while preserving model performance.
 
 \subsection{VAST Architecture for Video-Text Retrieval}
 
