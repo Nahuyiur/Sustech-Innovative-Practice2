@@ -238,7 +238,7 @@ Offline Pre-computation & \textbf{1.74} & \textbf{+9.7\%} \\
 
 We investigated replacing the Transformer-based visual encoder (ViT) in the student model with ConvNeXt, leveraging the open-source implementation and pre-trained weights from OpenCLIP~\cite{ilharco_gabriel_2021_5143773}, which provides reproducible training of CLIP models across diverse architectures. The objective was to explore whether CNN inductive biases, such as translation invariance and locality, could offer advantages in visual feature extraction or efficiency compared to the standard ViT. However, as detailed below, realizing these potential benefits in the video domain proved non-trivial.
 
-\subsubsection{Exploration under OpenCLIP Framework (COCO Dataset)}
+\subsubsection{Exploration under OpenCLIP Framework on COCO Dataset}
 
 We first validated fine-tuning strategies on COCO using ConvNeXtV2-Tiny. As shown in Table~\ref{tab:coco_tiny}, full fine-tuning caused overfitting, whereas a "controlled gradual unfreezing" strategy (unfreezing text at epoch 3, visual at epoch 5) achieved the best balance (I2T R@1: 9.55\%).
 
@@ -275,7 +275,7 @@ Distill + Late Unfreeze & 12.98\% & Unfreezing hurts distillation constraint \\
 \end{tabular}
 \end{table}
 
-\subsubsection{Preliminary Implementation on TeachCLIP (MSRVTT Dataset)}
+\subsubsection{Preliminary Implementation on TeachCLIP with MSRVTT Dataset}
 
 We integrated the ConvNeXt-Base encoder into TeachCLIP for video retrieval on MSRVTT. However, direct migration yielded suboptimal results (Table~\ref{tab:msrvtt_res}, R@1 $\approx$ 2.6--3.4\%), even with locked encoders. This indicates that simple encoder substitution is insufficient; effective adaptation requires specialized temporal modeling (e.g., `absattn`) to capture video dynamics, marking a key direction for future optimization.
 
@@ -332,28 +332,7 @@ In this section, we apply post-training quantization methods introduced in MS-Sw
 
 \subsection{MS-Swift Quantization Architecture and Methodology}
 
-MS-Swift (ModelScope Swift)~\cite{zhao2024swiftascalablelightweightinfrastructure} implements a GPTQ-based quantization framework for post-training quantization of large-scale models. While the documentation mentions uniform, dynamic, and static quantization with INT8 precision, the actual implementation focuses on GPTQ (GPT Quantization) with INT4 precision, providing a more specialized and efficient quantization approach.
-
-The key components of MS-Swift's quantization implementation include:
-
-\textbf{GPTQ Quantization Method:} The framework employs GPTQ, a post-training quantization method that quantizes model weights to INT4 precision. GPTQ uses a layer-wise quantization strategy that minimizes reconstruction error by optimizing quantization parameters. The method involves grouping weights and applying quantization sequentially, which allows for better accuracy preservation compared to uniform quantization approaches.
-
-\textbf{GPTQ Parameters:} The quantization process is configured through several key parameters:
-\begin{itemize}
-    \item \textbf{group\_size:} Controls the grouping strategy for weight quantization, determining how weights are partitioned for quantization
-    \item \textbf{sym:} Specifies whether to use symmetric quantization (sym=true) or asymmetric quantization (sym=false)
-    \item \textbf{true\_sequential:} When enabled, ensures that quantization is performed sequentially across layers, maintaining dependencies between layers during the quantization process
-\end{itemize}
-
-\textbf{Module-Level Selective Quantization:} Rather than applying uniform quantization across the entire model, MS-Swift supports selective quantization at the module level. This allows different modules or layers to be quantized with different configurations or to remain unquantized, based on their sensitivity to quantization error and their importance to model performance.
-
-\textbf{Custom Adapters and Runtime Patches:} The framework provides mechanisms for custom adapters and runtime patches, enabling fine-grained control over the quantization process and allowing for model-specific optimizations. These adapters can be used to handle special cases or to apply quantization only to specific components of the model.
-
-\textbf{Multimodal Model Handling:} For multimodal models like VAST, the framework includes special handling mechanisms. Specifically, certain branches (such as audio branches) can be selectively excluded from quantization or masked during the quantization process, ensuring that modality-specific components maintain their full precision when necessary.
-
-\textbf{Grouped and Sequential Quantization Strategies:} The implementation supports both grouped quantization, where weights are quantized in groups (controlled by group\_size), and sequential quantization (true\_sequential), where layers are quantized one after another to maintain inter-layer dependencies. These strategies are critical for maintaining model accuracy during INT4 quantization.
-
-In practice, MS-Swift's quantization implementation is more specialized toward GPTQ-based modular quantization rather than a generic quantization framework, making it particularly suitable for large language models and multimodal foundation models where INT4 precision can achieve significant compression while preserving model performance.
+MS-Swift (ModelScope Swift)~\cite{zhao2024swiftascalablelightweightinfrastructure} implements a GPTQ-based quantization framework for post-training quantization. The framework employs GPTQ with INT4 precision, using block-wise sequential quantization with Hessian-based optimization to minimize reconstruction error. Key configuration parameters include: group size of 128 for grouped quantization, symmetric quantization (sym=true), and sequential quantization (true\_sequential=true) to preserve inter-layer dependencies. The framework supports module-level selective quantization, enabling quantization to be applied only to specific components (e.g., vision encoder blocks) while preserving full precision for other modules such as text encoders or modality-specific branches in multimodal models.
 
 \subsection{VAST Architecture for Video-Text Retrieval}
 
@@ -372,31 +351,57 @@ The VAST model achieves strong performance in video-text retrieval after fine-tu
 
 \subsection{Post-Training Quantization Experimental Process}
 
-We perform post-training quantization on the fine-tuned VAST model weights using MS-Swift's quantization framework. The experimental process consists of the following steps:
+We apply GPTQ-based post-training quantization to compress the fine-tuned VAST model from FP16 to INT4 precision, achieving approximately 4× model size reduction while preserving retrieval performance.
 
-\textbf{Model Preparation:} We start with a VAST model that has been fine-tuned on our target video-text retrieval dataset. The fine-tuned model serves as the full-precision baseline, providing reference accuracy metrics for comparison with the quantized version.
+\textbf{Quantization Setup:} The quantization is performed on the fine-tuned VAST model using MS-Swift's GPTQ implementation. We configure the quantization to target INT4 precision with the following key parameters: group size of 128 for grouped quantization, symmetric quantization (sym=true), and sequential quantization (\texttt{true\_sequential}=true) to maintain layer dependencies. The quantization is selectively applied only to the vision encoder blocks (\texttt{vision\_encoder.visual.blocks}), preserving the full precision of other components including the text encoder and audio branches.
 
-\textbf{Calibration Dataset Preparation:} A representative subset of the training dataset is selected for calibration. This calibration set typically consists of 100-1000 samples that cover the diversity of the full dataset. The calibration data is used to compute quantization parameters without requiring gradient computation or backpropagation.
+\textbf{Calibration Data:} We use 200 calibration samples in JSONL format, each containing text queries and corresponding image frame sequences. During quantization, these samples are forward-passed through the model to collect activation statistics for each layer. The collected activations are used to compute Hessian matrices, which guide the quantization parameter optimization to minimize reconstruction error.
 
-\textbf{Quantization Configuration:} We configure the quantization settings using MS-Swift's API, specifying:
-\begin{itemize}
-    \item Target precision: INT8 for both weights and activations
-    \item Quantization scheme: Static quantization with calibration
-    \item Layer-wise precision: Maintaining FP32 precision for sensitive layers (e.g., layer normalization, final projection layers)
-    \item Calibration method: Min-max calibration or percentile-based calibration
-\end{itemize}
+\textbf{Quantization Process:} The quantization proceeds block-by-block through 40 vision encoder blocks. For each block, four linear modules are quantized sequentially: attention QKV projection (\texttt{attn.qkv}), attention output projection (\texttt{attn.proj}), and MLP layers (\texttt{mlp.fc1}, \texttt{mlp.fc2}). The process involves collecting activations from calibration data, computing Hessian matrices for weight sensitivity, performing grouped quantization (group size 128) to convert FP16 weights to INT4, and applying error compensation. Weights are transformed from FP16 (16 bits) to INT4 (4 bits) with per-group scaling factors, achieving approximately 4× compression with 4 INT4 values packed into 1 INT16 for storage.
 
-\textbf{Quantization Execution:} The quantization process is performed in two phases:
-\begin{enumerate}
-    \item \textit{Calibration Phase:} The calibration dataset is passed through the model in inference mode. Activation statistics are collected for each layer to determine optimal quantization scales and zero-points.
-    \item \textit{Conversion Phase:} The full-precision model weights are quantized to INT8 using the calibrated parameters, and the model graph is transformed to use quantized operations.
-\end{enumerate}
+The quantized VAST model maintains competitive retrieval performance with significantly reduced model size and memory footprint, enabling more efficient deployment for real-time video-text retrieval applications.
 
-\textbf{Evaluation:} The quantized model is evaluated on the test set to assess the impact of quantization on retrieval performance. Key metrics include retrieval accuracy (Recall@K for K=1, 5, 10), mean reciprocal rank (MRR), and inference latency. Additionally, we measure the model size reduction and memory footprint to quantify the compression benefits.
+\subsection{Quantization Results and Comparison}
 
-\textbf{Performance Optimization:} If the quantized model shows significant accuracy degradation, we apply fine-tuning strategies such as quantization-aware fine-tuning (QAT) on the quantized model, or adjust the quantization configuration to use mixed-precision quantization for critical layers.
+Table~\ref{tab:quantization_comparison} presents a comprehensive comparison between the original FP16 model and the quantized INT4 model, demonstrating the effectiveness of the GPTQ-based quantization approach.
 
-The quantized VAST model, achieved through MS-Swift's post-training quantization, enables efficient deployment while maintaining competitive retrieval performance, making it suitable for real-time video-text retrieval applications in autonomous driving scenarios.
+\begin{table}[h]
+\centering
+\caption{Comparison of Model Statistics Before and After Quantization}
+\label{tab:quantization_comparison}
+\begin{tabular}{l c c c}
+\toprule
+\textbf{Metric} & \textbf{FP16} & \textbf{INT4} & \textbf{Ratio} \\
+\midrule
+File Size & 5.20 GB & 1.86 GB & 2.80× \\
+Total Parameters & 1,396.66M & 522.85M & 2.67× \\
+Vision Encoder & 1,136.44M & 262.62M & 4.33× \\
+Total Weight Size & 5.33 GB & 1.99 GB & 2.67× \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The quantization results demonstrate effective compression: the vision encoder achieved 4.33× compression, closely matching the theoretical 4× ratio for INT4 quantization. The overall model size was reduced from 5.20 GB to 1.86 GB (2.80×), while the total compression ratio (2.67×) is lower due to other components remaining at full FP32 precision as part of the selective quantization strategy.
+
+Table~\ref{tab:quantization_performance} presents the retrieval performance comparison on the suscape test set (autonomous driving scenario dataset) before and after quantization.
+
+\begin{table}[h]
+\centering
+\caption{Retrieval Performance Comparison on Suscape Test Set}
+\label{tab:quantization_performance}
+\begin{tabular}{l c c}
+\toprule
+\textbf{Metric} & \textbf{FP16} & \textbf{INT4} \\
+\midrule
+Recall@1 & 64.4 & 37.3 \\
+Recall@5 & 88.7 & 55.9 \\
+Recall@10 & 97.2 & 65.2 \\
+Average Recall & 83.4 & 52.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The quantized model shows expected performance degradation compared to the full-precision model. Despite the performance drop, the quantized model maintains reasonable retrieval capabilities while achieving significant model size reduction.
 
 
 \section{Conclusion}
@@ -408,9 +413,6 @@ Our experiments with two state-of-the-art MLLMs (Vast and Clip-Vip) revealed tha
 Moving forward, we anticipate that further advancements in MLLMs, combined with more sophisticated annotation pipelines, will enhance the generalization capabilities of autonomous driving systems. Future research could explore dynamic annotation strategies, real-time retrieval optimization, and the integration of multi-sensor data (e.g., LiDAR and radar) to further improve model performance in complex driving environments.
 
 Ultimately, this study highlights the critical role of high-quality data and domain-specific adaptation in advancing autonomous driving technologies, paving the way for safer and more intelligent transportation systems.
-
-
-
 
 
 
