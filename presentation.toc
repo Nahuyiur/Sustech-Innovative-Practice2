@@ -1,0 +1,6 @@
+\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
+\beamer@sectionintoc {2}{Two Knowledge Distillation Methods Used}{5}{0}{2}
+\beamer@sectionintoc {3}{TeachCLIP}{15}{0}{3}
+\beamer@sectionintoc {4}{Alterations on TeachCLIP}{23}{0}{4}
+\beamer@sectionintoc {5}{Post-Training Quantization of VAST Model using MS-Swift}{28}{0}{5}
+\beamer@sectionintoc {6}{Conclusion}{34}{0}{6}
