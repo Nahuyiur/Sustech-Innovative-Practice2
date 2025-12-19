@@ -21,27 +21,29 @@
 
 \begin{document}
 
-\title{Video Retrieval of Autonomous Driving Scenarios Based on Large Models}
+\title{Knowledge Distillation Based on Large Video Retrieval Models}
 \author{12310520 Rui Yuhan   12310437 Qiao Shihan}
 
 
 \maketitle
 
 \begin{abstract}
-Video retrieval in autonomous driving scenarios demands models to comprehend complex visual environments and align them with detailed textual descriptions. While multimodal large language models (MLLMs) have demonstrated potential in vision-language tasks, their application to domain-specific video retrieval remains underexplored. Furthermore, the scarcity of publicly available high-quality annotated video data in the autonomous driving domain makes it challenging for models to accurately learn video content semantics from limited data. Additionally, significant differences exist between autonomous driving videos and those in general video datasets, leading to suboptimal performance of generic large models on autonomous driving datasets.
-
-To address these challenges, we evaluate the performance of two distinct pretrained MLLMs on a carefully curated autonomous driving dataset. This dataset features high-quality captions that have undergone multi-round optimization, combining human annotation expertise with advanced automated labeling techniques, while also serving as a benchmark platform for exploring more efficient annotation strategies. Experimental results demonstrate that our approach effectively retrieves relevant video segments based on textual queries, highlighting the potential of MLLMs to enhance retrieval accuracy and scalability.
-
+In the domain of autonomous driving (AD), deploying effective video retrieval systems faces a critical bottleneck: the high computational demand of large multimodal models versus the strict resource constraints of edge devices. This report focuses on \textbf{lightweighting} strategies to resolve this conflict. We explore two complementary pathways to achieve efficient video retrieval: Knowledge Distillation (KD) and Post-Training Quantization (PTQ). First, leveraging the TeachCLIP framework, we distill complex knowledge from heavy teacher models into lightweight student networks. We propose an acceleration strategy via ``Offline Feature Extraction" (improving training throughput by 9.7\%) and investigate architectural lightweighting by replacing the visual encoder with ConvNeXt. Second, we apply GPTQ-based post-training quantization to the massive VAST foundation model. By compressing the model to INT4 precision, we achieve a 2.80$\times$ reduction in global model size and a significant 4.33$\times$ compression of the vision encoder. These efforts collectively demonstrate viable paths toward constructing lightweight, high-performance video retrieval systems suitable for on-vehicle deployment.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Autonomous Driving Video Retrieval, Multimodal Large Language Models (MLLMs), Video Understanding, Automated Annotation Optimization
+Autonomous Driving, Video Retrieval, Lightweight Deep Learning, Knowledge Distillation, Model Quantization, TeachCLIP, VAST.
 \end{IEEEkeywords}
 
 
 \section{Introduction}
+Efficient video retrieval is critical for autonomous driving safety validation and data mining, yet deploying powerful Multimodal Large Language Models (MLLMs) on resource-constrained vehicles remains a significant bottleneck. To address this, we focus on \textbf{model lightweighting} strategies that bridge the gap between high-level semantic understanding and on-board hardware limitations.
 
-\section{Two knowledge distillation methods used}
+This report explores two optimization paradigms. First, we leverage Knowledge Distillation (KD) via the TeachCLIP framework~\cite{teachclip}, transferring fine-grained knowledge from heavy teachers to lightweight students. We enhance this pipeline with an "Offline Feature Extraction" strategy for faster training and investigate architectural optimizations using ConvNeXt encoders. Second, we employ Post-Training Quantization (PTQ) on the VAST foundation model. By quantizing weights to INT4 precision using MS-Swift, we drastically reduce memory footprint while retaining retrieval capabilities.
+
+The subsequent sections detail our methods: Section II reviews KD; Section III presents our TeachCLIP optimizations; Section IV discusses VAST quantization; and Section V concludes with performance insights.
+
+\section{Two Knowledge Distillation Methods Used}
 \subsection{Research Background and Motivation of Knowledge Distillation}
 With the rapid advancement of large-scale foundation models, Vision-Language Models (VLMs), and Large Language Models (LLMs), deploying these models on edge devices faces
 significant challenges due to high computational and memory requirements. Knowledge Distillation (KD), first proposed by Hinton et al.~\cite{hinton2015distilling}, addresses this issue by training a lightweight
@@ -56,7 +58,7 @@ The three primary categories are:
 and \textbf{similarity-based distillation}, which transfers structural knowledge through pairwise similarities between features, channels, or instances. 
 Additionally, distillation can be organized by training schemes: 
 \textbf{offline distillation} (pre-trained teacher with frozen weights), \textbf{online distillation} (simultaneous training), and \textbf{self-distillation} (same network transferring knowledge across layers or stages). 
-Other notable approaches include \textbf{attention-based distillation}for transferring focus patterns, \textbf{contrastive distillation} leveraging contrastive learning principles, and \textbf{cross-modal distillation} for transferring knowledge between different modalities, which is particularly relevant for multimodal tasks like video retrieval.
+Other notable approaches include \textbf{attention-based distillation} for transferring focus patterns, \textbf{contrastive distillation} leveraging contrastive learning principles, and \textbf{cross-modal distillation} for transferring knowledge between different modalities, which is particularly relevant for multimodal tasks like video retrieval.
 
 \subsection{DLDKD}
 
@@ -129,7 +131,7 @@ DLDKD employs feature pre-extraction to accelerate training: teacher model featu
 
 \subsection{TeachCLIP}
 \subsubsection{Inspiration}
-Existing VTR models generally fall into two categories: lightweight global feature models (e.g., CLIP4Clip) and heavy fine-grained models (e.g., X-CLIP). The former is computationally efficient but often lacks frame-level details, resulting in suboptimal retrieval accuracy. The latter leverages frame-level interactions to enhance performance but incurs high computational costs.
+Existing VTR models generally fall into two categories: lightweight global feature models (e.g., CLIP4Clip~\cite{Luo2021CLIP4Clip}) and heavy fine-grained models (e.g., X-CLIP~\cite{Ma2022XCLIP}). The former is computationally efficient but often lacks frame-level details, resulting in suboptimal retrieval accuracy. The latter leverages frame-level interactions to enhance performance but incurs high computational costs.
 
 \begin{figure}[h]
 \centering
@@ -295,7 +297,7 @@ MSRVTT-7k (16 epochs, Locked Encoder) & 2.6\% \\
 \end{table}
 \subsection{On Teacher Model}
 
-To utilize the computationally expensive InternVideo2.5 as a teacher without the overhead of online inference, we implemented an ``Offline Feature Extraction - Online Loading'' scheme:
+To utilize the computationally expensive InternVideo2.5~\cite{wang2025internvideo} as a teacher without the overhead of online inference, we implemented an ``Offline Feature Extraction - Online Loading'' scheme:
 
 \paragraph{1. Offline Feature Pre-computation}
 To avoid expensive repeated inference, we pre-compute and store InternVideo2.5 features (global, text, frame-level) as a local knowledge base.
@@ -406,13 +408,13 @@ The quantized model shows expected performance degradation compared to the full-
 
 \section{Conclusion}
 
-Autonomous driving video retrieval presents unique challenges due to the complexity of real-world driving scenarios and the scarcity of high-quality annotated datasets. In this work, we explored the potential of multimodal large language models (MLLMs) to bridge the gap between visual perception and textual understanding in autonomous driving contexts. By leveraging a carefully curated dataset with optimized annotations, combining human expertise and automated refinement using Video-LLama2, we demonstrated that pretrained MLLMs can be effectively adapted for domain-specific video retrieval tasks.
+In this work, we explored efficient approaches for video-text retrieval in autonomous driving scenarios, focusing on Knowledge Distillation and Post-Training Quantization to address the trade-off between accuracy and computational cost.
 
-Our experiments with two state-of-the-art MLLMs (Vast and Clip-Vip) revealed that fine-tuning on high-quality annotated data significantly improves retrieval accuracy, validating the importance of robust dataset construction. Additionally, our work establishes a benchmark for future research in autonomous driving video understanding, providing a foundation for developing more interpretable and scalable retrieval systems.
+In the domain of Knowledge Distillation, we successfully optimized the training efficiency of the TeachCLIP framework by implementing an offline feature pre-computation strategy, achieving a 9.7\% speedup. We further investigated the flexibility of the framework by replacing the student encoder with ConvNeXt and the teacher with InternVideo2.5. Our results highlight that while stronger teachers and inductive biases have potential, direct substitution requires careful hyperparameter tuning and specialized temporal modeling to fully realize performance gains.
 
-Moving forward, we anticipate that further advancements in MLLMs, combined with more sophisticated annotation pipelines, will enhance the generalization capabilities of autonomous driving systems. Future research could explore dynamic annotation strategies, real-time retrieval optimization, and the integration of multi-sensor data (e.g., LiDAR and radar) to further improve model performance in complex driving environments.
+For Model Quantization, we applied GPTQ INT4 quantization to the VAST model using MS-Swift. We achieved a significant reduction in model size (from 5.20 GB to 1.86 GB), demonstrating the feasibility of deploying large foundation models on constrained hardware. However, the observed drop in Recall@1 (from 64.4\% to 37.3\%) indicates that aggressive quantization to 4-bit precision requires advanced mitigation strategies, such as Quantization-Aware Training (QAT) or mixed-precision techniques, to preserve fine-grained retrieval capabilities.
 
-Ultimately, this study highlights the critical role of high-quality data and domain-specific adaptation in advancing autonomous driving technologies, paving the way for safer and more intelligent transportation systems.
+Future work will focus on two directions: (1) refining the distillation process for InternVideo2.5 by aligning feature spaces and loss weights more effectively, and (2) exploring recovery strategies for quantized models to minimize accuracy degradation while maintaining efficiency. Ultimately, these efforts contribute to building scalable and responsive video retrieval systems for the autonomous driving industry.
 
 
 
