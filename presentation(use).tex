@@ -25,8 +25,34 @@
     \tableofcontents
 \end{frame}
 
-\section{Introduction}
+\section{Motivation}
 
+\begin{frame}{Background}
+    \begin{itemize}
+        \item Safety validation for autonomous driving depends on fast, accurate video-text retrieval across ever-growing fleets.
+        \item Multimodal large language models (MLLMs) provide rich semantic reasoning but are difficult to deploy on embedded GPU/ASIC platforms with strict power and memory budgets.
+        \item Bridging this compute-performance gap requires systematic lightweighting strategies that preserve retrieval fidelity while shrinking latency and model size.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Motivation}
+    \begin{itemize}
+        \item \textbf{Significance:} Reliable retrieval accelerates data curation, rare-event mining, and closed-loop safety audits for intelligent vehicles.
+        \item \textbf{Advantages:} Combining knowledge distillation (TeachCLIP) with post-training quantization (VAST) offers complementary savings in FLOPs, memory, and training time.
+        \item \textbf{Gap:} Existing works seldom co-design teacher feature caching, student architecture tweaks, and INT4 compression within one pipeline tailored for autonomous driving datasets.
+        \item \textbf{Limitations:} Distillation inherits teacher biases and quantization introduces accuracy loss, motivating careful analysis of trade-offs and future refinement.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Research Objectives}
+    \begin{enumerate}
+        \item Engineer a TeachCLIP-based distillation workflow with offline feature extraction to balance throughput and fine-grained alignment.
+        \item Explore student/teacher architectural variants (ConvNeXt students, InternVideo2.5 teachers) to understand their practical benefits and constraints.
+        \item Quantize the VAST foundation model via MS-Swift GPTQ to INT4 precision, characterizing compression-efficiency versus retrieval accuracy for deployment.
+    \end{enumerate}
+\end{frame}
+
+\section{Introduction}
 \begin{frame}{Introduction}
     Efficient video retrieval is critical for autonomous driving safety validation and data mining, yet deploying powerful Multimodal Large Language Models (MLLMs) on resource-constrained vehicles faces a critical bottleneck: the high computational demand versus strict hardware limitations. This work focuses on \textbf{model lightweighting} strategies to bridge this gap.
 
