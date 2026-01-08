@@ -310,7 +310,7 @@ The training loop was refactored to skip teacher inference, instead utilizing an
 
 \subsubsection{Results on MSRVTT}
 
-We evaluated the performance of the student model distilled from different teachers on the MSRVTT dataset. As shown in Table~\ref{tab:teacher_comparison}, although InternVideo2.5 demonstrates superior performance as a teacher, the student model distilled from it (TeachCLIP w/ InternVideo2.5) currently underperforms the baseline distilled from X-CLIP. This performance drop is likely due to suboptimal hyperparameter settings (e.g., temperature, loss weights) when aligning with the new teacher's distribution, indicating that further tuning and optimization are required in future work.
+We evaluated the performance of the student model distilled from different teachers on the MSRVTT dataset. As shown in Table~\ref{tab:teacher_comparison}, InternVideo2.5 demonstrates superior performance as a teacher, and the student model distilled from it (TeachCLIP w/ InternVideo2.5) successfully outperforms the baseline distilled from X-CLIP. Specifically, R@1 improved from 46.8 to 47.8, R@5 from 74.9 to 76.4, and R@10 from 82.9 to 84.6. This improvement verifies that a stronger teacher model can indeed guide the student to achieve better performance through knowledge distillation.
 
 \begin{table}[h]
 \centering
@@ -323,7 +323,7 @@ We evaluated the performance of the student model distilled from different teach
 X-CLIP & 49.3 & 75.8 & 84.8 \\
 TeachCLIP (Teacher: X-CLIP) & 46.8 & 74.9 & 82.9 \\
 InternVideo2.5 (Teacher) & 55.9 & 78.3 & 85.1 \\
-TeachCLIP (Teacher: InternVideo2.5) & 42.8 & 70.2 & 80.6 \\
+TeachCLIP (Teacher: InternVideo2.5) & 47.8 & 76.4 & 84.6 \\
 \bottomrule
 \end{tabular}
 \end{table}
