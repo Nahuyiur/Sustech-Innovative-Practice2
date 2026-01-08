@@ -1,49 +1,62 @@
-# Knowledge Distillation Based on Large Video Retrieval Models
+# 🚗 Knowledge Distillation Based on Large Video Retrieval Models
+
+A research project on **lightweight video-text retrieval** for autonomous driving, focusing on two practical deployment directions:
+
+- **Knowledge Distillation (KD)**: distill fine-grained teachers into efficient students (TeachCLIP).
+- **Post-Training Quantization (PTQ)**: compress large foundation models (VAST) using GPTQ INT4.
 
 <p align="center">
-  <a href="./report(use).pdf"><b>Report (PDF)</b></a>
-  ·
-  <a href="./presentation(use).pdf"><b>Slides (PDF)</b></a>
+  <a href="./report.pdf"><b>📄 Report (PDF)</b></a>
+  &nbsp;|&nbsp;
+  <a href="./presentation.pdf"><b>🖥️ Slides (PDF)</b></a>
 </p>
 
-<p align="center">
-  <img src="./images/teachclip_framework.png" alt="TeachCLIP framework" width="900" />
-</p>
+## 📌 Project Overview
 
-## Abstract
+Autonomous driving (AD) generates massive volumes of video data, but real-world deployment (e.g., on-vehicle inference or edge-side indexing) is constrained by **compute, memory, and latency**.
 
-In the domain of autonomous driving (AD), deploying effective video retrieval systems faces a critical bottleneck: the high computational demand of large multimodal models versus the strict resource constraints of edge devices. This project focuses on **lightweighting** strategies to resolve this conflict. We explore two complementary pathways to achieve efficient video retrieval:
+Following the structure of `report.tex`, we explore two complementary lightweighting strategies:
 
-- **Knowledge Distillation (KD)** via TeachCLIP: transfer fine-grained knowledge from heavy teacher models into lightweight students.
-- **Post-Training Quantization (PTQ)** via GPTQ: compress a large foundation model (VAST) to reduce memory footprint.
+- **KD via TeachCLIP**: transfer *fine-grained* alignment capability from heavy teachers to a student based on CLIP4Clip.
+- **PTQ via GPTQ**: quantize VAST vision encoder blocks to INT4 to reduce memory footprint.
 
-## Contents
+## 🎯 Goals
 
-- [Highlights](#highlights)
-- [Methods](#methods)
-- [Key Figures](#key-figures)
-- [Results (from the report)](#results-from-the-report)
-- [Repository Structure](#repository-structure)
-- [Build the Report Locally](#build-the-report-locally)
-- [References](#references)
+- Make video-text retrieval models more deployable under resource constraints.
+- Improve KD training efficiency via **offline teacher feature extraction**.
+- Evaluate teacher strength (X-CLIP vs InternVideo2.5) and student architecture changes (ConvNeXt).
+- Quantize large retrieval foundation models (VAST) while keeping retrieval capability as much as possible.
 
-## Highlights
+## 🎖️ Workflow (Two Complementary Paths)
 
-- **TeachCLIP distillation** on video-text retrieval, with both video-level and frame-level soft labels.
-- **Offline feature pre-computation** to accelerate KD training throughput.
-- **Student lightweighting exploration**: replacing the student visual encoder with ConvNeXt (OpenCLIP) and evaluating transferability.
-- **Stronger teacher exploration**: distilling from InternVideo2.5 improves MSRVTT retrieval metrics over X-CLIP-based distillation.
-- **VAST INT4 quantization** (MS-Swift GPTQ) significantly reduces model size with expected accuracy trade-offs.
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./images/teachclip_framework.png" alt="TeachCLIP (KD)" width="420" />
+      <br />
+      <b>KD: TeachCLIP Distillation</b>
+    </td>
+    <td align="center" width="50%">
+      <img src="./images/quantization.png" alt="VAST Quantization (GPTQ INT4)" width="420" />
+      <br />
+      <b>PTQ: VAST GPTQ INT4</b>
+    </td>
+  </tr>
+</table>
 
-## Methods
+KD focuses on **transferring knowledge** from heavy teachers to a lightweight student; PTQ focuses on **compressing weights** of a large model after training.
 
-### Knowledge Distillation (TeachCLIP)
+------
 
-- **Student**: CLIP4Clip-style video-text dual encoder with Attentional Frame-Feature Aggregation (AFA) to replace mean pooling.
-- **Teacher**: heavy fine-grained video-text retrieval model providing:
-  - video-level soft labels
-  - frame-level soft labels
-- **Acceleration**: offline pre-computation and caching of teacher visual features to remove repeated teacher forward passes.
+## 🧠 Key Components
+
+### 1) Knowledge Distillation: TeachCLIP
+
+- **Student**: CLIP4Clip-style dual encoder + temporal modeling + **Attentional Frame-Feature Aggregation (AFA)** for weighted frame pooling.
+- **Teacher supervision**:
+  - **Video-level soft labels** for retrieval ranking
+  - **Frame-level soft labels** for better frame weighting (AFA)
+- **Training acceleration**: offline caching of teacher frame-level visual features to eliminate repeated teacher forward passes.
 
 <table>
   <tr>
@@ -56,35 +69,37 @@ In the domain of autonomous driving (AD), deploying effective video retrieval sy
   </tr>
 </table>
 
-### Post-Training Quantization (VAST, GPTQ INT4)
+We also explored:
 
-- Use MS-Swift GPTQ to quantize **vision encoder blocks** to **INT4** (selective quantization), keeping other modules in higher precision.
-- Goal: reduce memory footprint for edge deployment while preserving reasonable retrieval performance.
+- **Student encoder lightweighting**: replacing ViT with **ConvNeXt (OpenCLIP)** (not directly successful on MSRVTT without further temporal adaptation).
+- **Stronger teachers**: using **InternVideo2.5** as teacher and loading its features offline to avoid online teacher inference.
 
-## Key Figures
+### 2) Post-Training Quantization: VAST (GPTQ INT4)
 
-<p align="center">
-  <img src="./images/dldkd_framework.png" alt="DLDKD framework" width="900" />
-</p>
+- Apply MS-Swift **GPTQ INT4** quantization to VAST.
+- **Selective quantization**: target `vision_encoder.visual.blocks` while keeping other modules higher precision.
+- Use calibration samples to estimate sensitivity and perform block-wise sequential quantization.
 
 <p align="center">
   <img src="./images/vast_framework.png" alt="VAST framework" width="900" />
 </p>
 
-<p align="center">
-  <img src="./images/quantization.png" alt="Quantization" width="900" />
-</p>
+------
 
-## Results (from the report)
+## 📚 Results (from `report.tex`)
 
-### Training acceleration (TeachCLIP)
+### 1) KD training acceleration
+
+Offline feature pre-computation improves the distillation training throughput:
 
 | Setting | Time/step (s) | Speedup |
 |---|---:|---:|
 | Online Extraction (Baseline) | 1.91 | -- |
 | Offline Pre-computation | **1.74** | **+9.7%** |
 
-### Teacher comparison on MSRVTT
+### 2) Teacher comparison on MSRVTT
+
+Using InternVideo2.5 as a stronger teacher improves the distilled student metrics:
 
 | Model | R@1 | R@5 | R@10 |
 |---|---:|---:|---:|
@@ -93,7 +108,7 @@ In the domain of autonomous driving (AD), deploying effective video retrieval sy
 | InternVideo2.5 (Teacher) | 55.9 | 78.3 | 85.1 |
 | TeachCLIP (Teacher: InternVideo2.5) | **47.8** | **76.4** | **84.6** |
 
-### VAST quantization statistics (FP16 → INT4)
+### 3) Quantization statistics (VAST FP16 → INT4)
 
 | Metric | FP16 | INT4 | Ratio |
 |---|---:|---:|---:|
@@ -102,7 +117,7 @@ In the domain of autonomous driving (AD), deploying effective video retrieval sy
 | Vision Encoder | 1,136.44M | 262.62M | 4.33× |
 | Total Weight Size | 5.33 GB | 1.99 GB | 2.67× |
 
-### Retrieval performance on Suscape test set
+### 4) Retrieval performance on Suscape test set (before/after INT4)
 
 | Metric | FP16 | INT4 |
 |---|---:|---:|
@@ -111,15 +126,47 @@ In the domain of autonomous driving (AD), deploying effective video retrieval sy
 | Recall@10 | 97.2 | 65.2 |
 | Average Recall | 83.4 | 52.8 |
 
-## Repository Structure
+------
+
+## 🧑‍💻 Contributors
+
+- **Rui Yuhan (芮煜涵)**
+- **Qiao Shihan (乔诗涵)**
+
+------
+
+## 📎 References
+
+- Bibliography is maintained in `reference.bib`.
+- Related papers and notes are collected in `materials/`.
+
+<details>
+  <summary><b>Build locally (LaTeX)</b></summary>
+
+```bash
+latexmk -pdf "report.tex"
+latexmk -pdf "presentation.tex"
+```
+
+```bash
+pdflatex "report.tex"
+bibtex "report"
+pdflatex "report.tex"
+pdflatex "report.tex"
+```
+
+</details>
+
+<details>
+  <summary><b>Repository structure</b></summary>
 
 ```
 .
 ├── README.md
-├── report(use).tex
-├── report(use).pdf
-├── presentation(use).tex
-├── presentation(use).pdf
+├── report.tex
+├── report.pdf
+├── presentation.tex
+├── presentation.pdf
 ├── reference.bib
 ├── images/
 │   ├── clip4clip_framework.png
@@ -136,25 +183,4 @@ In the domain of autonomous driving (AD), deploying effective video retrieval sy
     └── ...
 ```
 
-## Build the Report Locally
-
-- **Option A (recommended):** `latexmk`
-
-```bash
-latexmk -pdf "report(use).tex"
-latexmk -pdf "presentation(use).tex"
-```
-
-- **Option B:** `pdflatex` + `bibtex` (run multiple times if needed)
-
-```bash
-pdflatex "report(use).tex"
-bibtex "report(use)"
-pdflatex "report(use).tex"
-pdflatex "report(use).tex"
-```
-
-## References
-
-- Bibliography is maintained in `reference.bib`.
-- Related papers and notes are collected in `materials/`.
+</details>
